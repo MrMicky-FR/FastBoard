@@ -15,10 +15,6 @@ public class FastBoard {
     private List<String> lines = new ArrayList<>();
 
     public FastBoard(Player player) {
-        if (FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_13) {
-            throw new UnsupportedOperationException("FastBoard is not currently compatible with 1.13");
-        }
-
         this.player = player;
 
         id = player.getName();
@@ -55,7 +51,7 @@ public class FastBoard {
 
     public void updateLines(List<String> newLines) {
         for (String s : newLines) {
-            if (s.length() > 30) {
+            if (s.length() > 30 && FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
                 throw new IllegalArgumentException("Line can't be longer than 30 chars");
             }
         }
@@ -135,7 +131,7 @@ public class FastBoard {
         setField(packet, int.class, mode.ordinal());
 
         if (mode != ObjectiveMode.REMOVE) {
-            setField(packet, String.class, title != null ? title : ChatColor.RESET.toString(), 1);
+            setComponentField(packet, title != null ? title : ChatColor.RESET.toString(), 1);
 
             if (FastReflection.VERSION_TYPE.isHigherOrEqual(FastReflection.VersionType.V1_8)) {
                 setField(packet, FastReflection.ENUM_SB_HEALTH_DISPLAY, FastReflection.ENUM_SB_HEALTH_DISPLAY_INTEGER);
@@ -187,7 +183,7 @@ public class FastBoard {
         Object packet = FastReflection.PACKET_SB_TEAM.newInstance();
 
         setField(packet, String.class, id + ':' + score); // Team name
-        setField(packet, int.class, mode.ordinal(), FastReflection.VERSION_TYPE.isHigherOrEqual(FastReflection.VersionType.V1_8) ? 1 : 0); // Update mode
+        setField(packet, int.class, mode.ordinal(), FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_8 ? 1 : 0); // Update mode
 
         if (mode == TeamMode.CREATE || mode == TeamMode.UPDATE) {
             String line = lines.get(score);
@@ -196,7 +192,7 @@ public class FastBoard {
 
             if (line == null || line.isEmpty()) {
                 prefix = getColorCode(score) + ChatColor.RESET;
-            } else if (line.length() <= 16) {
+            } else if (line.length() <= 16 || FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_13) {
                 prefix = line;
             } else {
                 prefix = line.substring(0, 16);
@@ -204,9 +200,8 @@ public class FastBoard {
                 suffix = (color.isEmpty() ? ChatColor.RESET : color) + line.substring(16);
             }
 
-            //setField(packet, String.class, "", 1); // Display name
-            setField(packet, String.class, prefix, 2); // Prefix
-            setField(packet, String.class, suffix == null ? "" : suffix, 3); // Suffix
+            setComponentField(packet, prefix, 2); // Prefix
+            setComponentField(packet, suffix == null ? "" : suffix, 3); // Suffix
             setField(packet, String.class, "always", 4); // Visibility for 1.8+
             setField(packet, String.class, "always", 5); // Collisions for 1.9+
 
@@ -244,6 +239,24 @@ public class FastBoard {
                 }
 
                 f.set(object, value);
+            }
+        }
+    }
+
+    private void setComponentField(Object object, String value, int count) throws ReflectiveOperationException {
+        if (FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
+            setField(object, String.class, value, count);
+            return;
+        }
+
+        int i = 0;
+        for (Field f : object.getClass().getDeclaredFields()) {
+            if ((f.getType() == String.class || f.getType() == FastReflection.CHAT_COMPONENT_CLASS) && i++ == count) {
+                if (!f.isAccessible()) {
+                    f.setAccessible(true);
+                }
+
+                f.set(object, FastReflection.getChatBaseComponent(value));
             }
         }
     }

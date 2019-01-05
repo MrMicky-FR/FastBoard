@@ -3,6 +3,7 @@ package fr.mrmicky.fastboard;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -25,6 +26,7 @@ public class FastReflection {
     private static final Method PLAYER_GET_HANDLE;
 
     // Utils
+    public static final Class<?> CHAT_COMPONENT_CLASS;
     public static final Method MESSAGE_FROM_STRING;
 
     // Packets
@@ -61,6 +63,7 @@ public class FastReflection {
             Class<?> craftPlayerClass = getClassOCB("entity.CraftPlayer");
 
             MESSAGE_FROM_STRING = craftChatMessageClass.getDeclaredMethod("fromString", String.class);
+            CHAT_COMPONENT_CLASS = getClassNMS("IChatBaseComponent");
 
             PLAYER_GET_HANDLE = craftPlayerClass.getDeclaredMethod("getHandle");
             PLAYER_CONNECTION = entityPlayerClass.getDeclaredField("playerConnection");
@@ -73,7 +76,12 @@ public class FastReflection {
 
             if (VERSION_TYPE.isHigherOrEqual(VersionType.V1_8)) {
                 ENUM_SB_HEALTH_DISPLAY = getClassNMS("IScoreboardCriteria$EnumScoreboardHealthDisplay");
-                ENUM_SB_ACTION = getClassNMS("PacketPlayOutScoreboardScore$EnumScoreboardAction");
+
+                if (VERSION_TYPE.isHigherOrEqual(VersionType.V1_13)) {
+                    ENUM_SB_ACTION = getClassNMS("ScoreboardServer$Action");
+                } else {
+                    ENUM_SB_ACTION = getClassNMS("PacketPlayOutScoreboardScore$EnumScoreboardAction");
+                }
 
                 ENUM_SB_HEALTH_DISPLAY_INTEGER = enumValueof(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
 
@@ -101,6 +109,10 @@ public class FastReflection {
         Object entityPlayer = PLAYER_GET_HANDLE.invoke(p);
         Object playerConnection = PLAYER_CONNECTION.get(entityPlayer);
         SEND_PACKET.invoke(playerConnection, packet);
+    }
+
+    public static Object getChatBaseComponent(String s) throws ReflectiveOperationException {
+        return Array.get(MESSAGE_FROM_STRING.invoke(null, s), 0);
     }
 
     private static Class<?> getClassNMS(String name) throws ClassNotFoundException {
