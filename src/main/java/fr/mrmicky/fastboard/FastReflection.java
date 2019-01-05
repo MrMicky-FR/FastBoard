@@ -53,8 +53,6 @@ public class FastReflection {
             VERSION_TYPE = VersionType.V1_7;
         }
 
-        System.out.println(VERSION_TYPE);
-
         try {
             Class<?> craftChatMessageClass = getClassOCB("util.CraftChatMessage");
 
