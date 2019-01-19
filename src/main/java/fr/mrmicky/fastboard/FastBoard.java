@@ -17,7 +17,7 @@ public class FastBoard {
     public FastBoard(Player player) {
         this.player = player;
 
-        id = player.getName();
+        id = "fb-" + UUID.randomUUID().toString().substring(0, 8);
 
         try {
             sendObjectivePacket(ObjectiveMode.CREATE);
@@ -33,7 +33,7 @@ public class FastBoard {
         }
 
         if (title.length() > 32) {
-            throw new IllegalArgumentException("Title can't be longer than 32 chars");
+            throw new IllegalArgumentException("Title is longer than 32 chars");
         }
 
         this.title = title;
@@ -50,10 +50,12 @@ public class FastBoard {
     }
 
     public void updateLines(List<String> newLines) {
+        int lineCount = 0;
         for (String s : newLines) {
             if (s.length() > 30 && FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
-                throw new IllegalArgumentException("Line can't be longer than 30 chars");
+                throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
             }
+            lineCount++;
         }
 
         List<String> lines = new ArrayList<>(newLines);
@@ -198,6 +200,12 @@ public class FastBoard {
                 prefix = line.substring(0, 16);
                 String color = ChatColor.getLastColors(prefix);
                 suffix = (color.isEmpty() ? ChatColor.RESET : color) + line.substring(16);
+            }
+
+            if (FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
+                if (prefix.length() > 16 || (suffix != null && suffix.length() > 16)) {
+                    throw new IllegalArgumentException("Line with score " + score + " is too long: " + line + '(' + prefix + '/' + suffix + ')');
+                }
             }
 
             setComponentField(packet, prefix, 2); // Prefix
