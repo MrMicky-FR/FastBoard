@@ -3,10 +3,97 @@ package fr.mrmicky.fastboard;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
+/**
+ * Light Bukkit ScoreBoard API with 1.7-1.13 support
+ * <p>
+ * You can find the project on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>
+ *
+ * @author MrMicky
+ */
 public class FastBoard {
+
+    private static final VersionType VERSION_TYPE;
+
+    // Packets sending
+    private static final Field PLAYER_CONNECTION;
+    private static final Method SEND_PACKET;
+    private static final Method PLAYER_GET_HANDLE;
+
+    // Chat components
+    private static final Class<?> CHAT_COMPONENT_CLASS;
+    private static final Method MESSAGE_FROM_STRING;
+
+    // Scoreboard packets
+    private static final Constructor<?> PACKET_SB_OBJ;
+    private static final Constructor<?> PACKET_SB_DISPLAY_OBJ;
+    private static final Constructor<?> PACKET_SB_SCORE;
+    private static final Constructor<?> PACKET_SB_TEAM;
+
+    // Scoreboard enums
+    private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
+    private static final Class<?> ENUM_SB_ACTION;
+    private static final Object ENUM_SB_HEALTH_DISPLAY_INTEGER;
+    private static final Object ENUM_SB_ACTION_CHANGE;
+    private static final Object ENUM_SB_ACTION_REMOVE;
+
+    static {
+        try {
+            if (FastReflection.nmsOptionalClass("ScoreboardServer$Action").isPresent()) {
+                VERSION_TYPE = VersionType.V1_13;
+            } else if (FastReflection.nmsOptionalClass("IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()) {
+                VERSION_TYPE = VersionType.V1_8;
+            } else {
+                VERSION_TYPE = VersionType.V1_7;
+            }
+
+            Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
+            Class<?> entityPlayerClass = FastReflection.nmsClass("EntityPlayer");
+            Class<?> playerConnectionClass = FastReflection.nmsClass("PlayerConnection");
+            Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
+
+            MESSAGE_FROM_STRING = craftChatMessageClass.getDeclaredMethod("fromString", String.class);
+            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("IChatBaseComponent");
+
+            PLAYER_GET_HANDLE = craftPlayerClass.getDeclaredMethod("getHandle");
+            PLAYER_CONNECTION = entityPlayerClass.getDeclaredField("playerConnection");
+            SEND_PACKET = playerConnectionClass.getDeclaredMethod("sendPacket", FastReflection.nmsClass("Packet"));
+
+            PACKET_SB_OBJ = FastReflection.nmsClass("PacketPlayOutScoreboardObjective").getConstructor();
+            PACKET_SB_DISPLAY_OBJ = FastReflection.nmsClass("PacketPlayOutScoreboardDisplayObjective").getConstructor();
+            PACKET_SB_SCORE = FastReflection.nmsClass("PacketPlayOutScoreboardScore").getConstructor();
+            PACKET_SB_TEAM = FastReflection.nmsClass("PacketPlayOutScoreboardTeam").getConstructor();
+
+            if (VersionType.V1_8.isHigherOrEqual()) {
+                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("IScoreboardCriteria$EnumScoreboardHealthDisplay");
+
+                if (VersionType.V1_13.isHigherOrEqual()) {
+                    ENUM_SB_ACTION = FastReflection.nmsClass("ScoreboardServer$Action");
+                } else {
+                    ENUM_SB_ACTION = FastReflection.nmsClass("PacketPlayOutScoreboardScore$EnumScoreboardAction");
+                }
+
+                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
+
+                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE");
+                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE");
+            } else {
+                ENUM_SB_HEALTH_DISPLAY = null;
+                ENUM_SB_ACTION = null;
+
+                ENUM_SB_HEALTH_DISPLAY_INTEGER = null;
+                ENUM_SB_ACTION_CHANGE = null;
+                ENUM_SB_ACTION_REMOVE = null;
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private Player player;
     private String id;
@@ -52,7 +139,7 @@ public class FastBoard {
     public void updateLines(List<String> newLines) {
         int lineCount = 0;
         for (String s : newLines) {
-            if (s.length() > 30 && FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
+            if (s.length() > 30 && VERSION_TYPE != VersionType.V1_13) {
                 throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
             }
             lineCount++;
@@ -127,7 +214,7 @@ public class FastBoard {
     }
 
     private void sendObjectivePacket(ObjectiveMode mode) throws ReflectiveOperationException {
-        Object packet = FastReflection.PACKET_SB_OBJ.newInstance();
+        Object packet = PACKET_SB_OBJ.newInstance();
 
         setField(packet, String.class, id);
         setField(packet, int.class, mode.ordinal());
@@ -135,10 +222,10 @@ public class FastBoard {
         if (mode != ObjectiveMode.REMOVE) {
             setComponentField(packet, title != null ? title : ChatColor.RESET.toString(), 1);
 
-            if (FastReflection.VERSION_TYPE.isHigherOrEqual(FastReflection.VersionType.V1_8)) {
-                setField(packet, FastReflection.ENUM_SB_HEALTH_DISPLAY, FastReflection.ENUM_SB_HEALTH_DISPLAY_INTEGER);
+            if (VersionType.V1_8.isHigherOrEqual()) {
+                setField(packet, ENUM_SB_HEALTH_DISPLAY, ENUM_SB_HEALTH_DISPLAY_INTEGER);
             }
-        } else if (FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_7) {
+        } else if (VERSION_TYPE == VersionType.V1_7) {
             setField(packet, String.class, "", 1);
         }
 
@@ -146,7 +233,7 @@ public class FastBoard {
     }
 
     private void sendDisplayObjectivePacket() throws ReflectiveOperationException {
-        Object packet = FastReflection.PACKET_SB_DISPLAY_OBJ.newInstance();
+        Object packet = PACKET_SB_DISPLAY_OBJ.newInstance();
 
         setField(packet, int.class, 1);
         setField(packet, String.class, id);
@@ -155,15 +242,15 @@ public class FastBoard {
     }
 
     private void sendScorePacket(int score, boolean remove) throws ReflectiveOperationException {
-        Object packet = FastReflection.PACKET_SB_SCORE.newInstance();
+        Object packet = PACKET_SB_SCORE.newInstance();
 
         setField(packet, String.class, getColorCode(score), 0);
 
-        if (FastReflection.VERSION_TYPE.isHigherOrEqual(FastReflection.VersionType.V1_8)) {
+        if (VersionType.V1_8.isHigherOrEqual()) {
             if (remove) {
-                setField(packet, FastReflection.ENUM_SB_ACTION, FastReflection.ENUM_SB_ACTION_REMOVE);
+                setField(packet, ENUM_SB_ACTION, ENUM_SB_ACTION_REMOVE);
             } else {
-                setField(packet, FastReflection.ENUM_SB_ACTION, FastReflection.ENUM_SB_ACTION_CHANGE);
+                setField(packet, ENUM_SB_ACTION, ENUM_SB_ACTION_CHANGE);
             }
         } else {
             setField(packet, int.class, remove ? 1 : 0, 1);
@@ -182,10 +269,10 @@ public class FastBoard {
             throw new UnsupportedOperationException();
         }
 
-        Object packet = FastReflection.PACKET_SB_TEAM.newInstance();
+        Object packet = PACKET_SB_TEAM.newInstance();
 
         setField(packet, String.class, id + ':' + score); // Team name
-        setField(packet, int.class, mode.ordinal(), FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_8 ? 1 : 0); // Update mode
+        setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
 
         if (mode == TeamMode.CREATE || mode == TeamMode.UPDATE) {
             String line = lines.get(score);
@@ -194,7 +281,7 @@ public class FastBoard {
 
             if (line == null || line.isEmpty()) {
                 prefix = getColorCode(score) + ChatColor.RESET;
-            } else if (line.length() <= 16 || FastReflection.VERSION_TYPE == FastReflection.VersionType.V1_13) {
+            } else if (line.length() <= 16 || VERSION_TYPE == VersionType.V1_13) {
                 prefix = line;
             } else {
                 prefix = line.substring(0, 16);
@@ -202,7 +289,7 @@ public class FastBoard {
                 suffix = (color.isEmpty() ? ChatColor.RESET : color) + line.substring(16);
             }
 
-            if (FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
+            if (VERSION_TYPE != VersionType.V1_13) {
                 if (prefix.length() > 16 || (suffix != null && suffix.length() > 16)) {
                     throw new IllegalArgumentException("Line with score " + score + " is too long: " + line + '(' + prefix + '/' + suffix + ')');
                 }
@@ -230,7 +317,9 @@ public class FastBoard {
             throw new IllegalStateException("FastBoard is deleted");
         }
 
-        FastReflection.sendPacket(player, packet);
+        Object entityPlayer = PLAYER_GET_HANDLE.invoke(player);
+        Object playerConnection = PLAYER_CONNECTION.get(entityPlayer);
+        SEND_PACKET.invoke(playerConnection, packet);
     }
 
     private void setField(Object object, Class<?> fieldType, Object value) throws ReflectiveOperationException {
@@ -242,29 +331,23 @@ public class FastBoard {
 
         for (Field f : object.getClass().getDeclaredFields()) {
             if (f.getType() == fieldType && i++ == count) {
-                if (!f.isAccessible()) {
-                    f.setAccessible(true);
-                }
-
+                f.setAccessible(true);
                 f.set(object, value);
             }
         }
     }
 
     private void setComponentField(Object object, String value, int count) throws ReflectiveOperationException {
-        if (FastReflection.VERSION_TYPE != FastReflection.VersionType.V1_13) {
+        if (VERSION_TYPE != VersionType.V1_13) {
             setField(object, String.class, value, count);
             return;
         }
 
         int i = 0;
         for (Field f : object.getClass().getDeclaredFields()) {
-            if ((f.getType() == String.class || f.getType() == FastReflection.CHAT_COMPONENT_CLASS) && i++ == count) {
-                if (!f.isAccessible()) {
-                    f.setAccessible(true);
-                }
-
-                f.set(object, FastReflection.getChatBaseComponent(value));
+            if ((f.getType() == String.class || f.getType() == CHAT_COMPONENT_CLASS) && i++ == count) {
+                f.setAccessible(true);
+                f.set(object, Array.get(MESSAGE_FROM_STRING.invoke(null, value), 0));
             }
         }
     }
@@ -279,5 +362,14 @@ public class FastBoard {
 
         CREATE, REMOVE, UPDATE, ADD_PLAYERS, REMOVE_PLAYERS
 
+    }
+
+    enum VersionType {
+
+        V1_7, V1_8, V1_13;
+
+        public boolean isHigherOrEqual() {
+            return VERSION_TYPE.ordinal() >= ordinal();
+        }
     }
 }

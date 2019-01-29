@@ -6,7 +6,7 @@
 
     <groupId>fr.mrmicky</groupId>
     <artifactId>fastboard</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 
     <name>FastBoard</name>
 
@@ -15,7 +15,6 @@
     </properties>
 
     <build>
-        <defaultGoal>clean package</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
