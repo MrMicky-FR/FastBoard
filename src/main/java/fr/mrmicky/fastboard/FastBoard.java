@@ -132,7 +132,7 @@ public class FastBoard {
      * Update the scoreboard title. The title can't be longer than 32 chars
      *
      * @param title the new scoreboard title
-     * @throws IllegalArgumentException if the title is longer than 32 chars
+     * @throws IllegalArgumentException if the title is longer than 32 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public void updateTitle(String title) {
@@ -140,7 +140,7 @@ public class FastBoard {
             return;
         }
 
-        if (title.length() > 32) {
+        if (!VersionType.V1_13.isHigherOrEqual() && title.length() > 32) {
             throw new IllegalArgumentException("Title is longer than 32 chars");
         }
 
@@ -168,7 +168,7 @@ public class FastBoard {
      * Update the lines of the scoreboard
      *
      * @param lines the new scoreboard lines
-     * @throws IllegalArgumentException if one line is longer than 30 chars
+     * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public void updateLines(String... lines) {
@@ -179,16 +179,18 @@ public class FastBoard {
      * Update the lines of the scoreboard
      *
      * @param newLines the new scoreboard lines
-     * @throws IllegalArgumentException if one line is longer than 30 chars
+     * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public void updateLines(Collection<String> newLines) {
-        int lineCount = 0;
-        for (String s : newLines) {
-            if (s.length() > 30 && VERSION_TYPE != VersionType.V1_13) {
-                throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
+        if (!VersionType.V1_13.isHigherOrEqual()) {
+            int lineCount = 0;
+            for (String s : newLines) {
+                if (s.length() > 30) {
+                    throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
+                }
+                lineCount++;
             }
-            lineCount++;
         }
 
         List<String> oldLines = new ArrayList<>(lines);
@@ -322,7 +324,7 @@ public class FastBoard {
 
             if (line == null || line.isEmpty()) {
                 prefix = getColorCode(score) + ChatColor.RESET;
-            } else if (line.length() <= 16 || VERSION_TYPE == VersionType.V1_13) {
+            } else if (line.length() <= 16 || VersionType.V1_13.isHigherOrEqual()) {
                 prefix = line;
             } else {
                 prefix = line.substring(0, 16);

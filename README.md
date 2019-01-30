@@ -12,7 +12,7 @@ A Scoreboard API for Bukkit with 1.7-1.13 support
 * Everything is at packet level so it works with other plugins using scoreboard and/or teams
 * Can be use in an async thread (but is not thread safe yet)
 * Support up to 30 characters per line on 1.7-1.12
-* No characters limit on 1.13
+* No characters limit on 1.13 !
 
 ## How to use
 
