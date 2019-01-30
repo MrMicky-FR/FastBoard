@@ -10,7 +10,8 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * Light Bukkit ScoreBoard API with 1.7-1.13 support
+ * Simple Bukkit ScoreBoard API with 1.7 to 1.13.2 support !
+ * Everything is at packet level so you don't need to use it in the main server thread.
  * <p>
  * You can find the project on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>
  *
@@ -79,7 +80,6 @@ public class FastBoard {
                 }
 
                 ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
-
                 ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE");
                 ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE");
             } else {
@@ -101,6 +101,11 @@ public class FastBoard {
     private String title;
     private List<String> lines = new ArrayList<>();
 
+    /**
+     * Create a new FastBoard for a player
+     *
+     * @param player the player the scoreboard is for
+     */
     public FastBoard(Player player) {
         this.player = player;
 
@@ -114,6 +119,22 @@ public class FastBoard {
         }
     }
 
+    /**
+     * Get the current title of the scoreboard.
+     *
+     * @return current scoreboard title
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
+     * Update the scoreboard title. The title can't be longer than 32 chars
+     *
+     * @param title the new scoreboard title
+     * @throws IllegalArgumentException if the title is longer than 32 chars
+     * @throws IllegalStateException    if {@link #delete()} was call before
+     */
     public void updateTitle(String title) {
         if (title.equals(this.title)) {
             return;
@@ -132,10 +153,35 @@ public class FastBoard {
         }
     }
 
+    /**
+     * Get the current lines of the scoreboard
+     *
+     * @return the current lines of the scoreboard
+     */
+    public List<String> getLines() {
+        List<String> lines = new ArrayList<>(this.lines);
+        Collections.reverse(lines);
+        return lines;
+    }
+
+    /**
+     * Update the lines of the scoreboard
+     *
+     * @param lines the new scoreboard lines
+     * @throws IllegalArgumentException if one line is longer than 30 chars
+     * @throws IllegalStateException    if {@link #delete()} was call before
+     */
     public void updateLines(String... lines) {
         updateLines(Arrays.asList(lines));
     }
 
+    /**
+     * Update the lines of the scoreboard
+     *
+     * @param newLines the new scoreboard lines
+     * @throws IllegalArgumentException if one line is longer than 30 chars
+     * @throws IllegalStateException    if {@link #delete()} was call before
+     */
     public void updateLines(List<String> newLines) {
         int lineCount = 0;
         for (String s : newLines) {
@@ -145,12 +191,10 @@ public class FastBoard {
             lineCount++;
         }
 
-        List<String> lines = new ArrayList<>(newLines);
+        List<String> oldLines = new ArrayList<>(lines);
+        lines.clear();
+        lines.addAll(newLines);
         Collections.reverse(lines);
-
-        List<String> oldLines = this.lines;
-
-        this.lines = lines;
 
         try {
             if (oldLines.size() != lines.size()) {
@@ -160,23 +204,19 @@ public class FastBoard {
                     for (int i = oldLinesCopy.size(); i > lines.size(); i--) {
                         sendTeamPacket(i - 1, TeamMode.REMOVE);
 
-                        sendScorePacket(i - 1, true);
+                        sendScorePacket(i - 1, ScoreboardAction.REMOVE);
 
                         oldLines.remove(oldLines.size() - 1);
                     }
                 } else {
                     for (int i = oldLinesCopy.size(); i < lines.size(); i++) {
-                        sendScorePacket(i, false);
+                        sendScorePacket(i, ScoreboardAction.CHANGE);
 
                         sendTeamPacket(i, TeamMode.CREATE);
 
                         oldLines.add(i, lines.get(i));
                     }
                 }
-            }
-
-            if (lines.isEmpty()) {
-                return;
             }
 
             for (int i = 0; i < lines.size(); i++) {
@@ -189,16 +229,21 @@ public class FastBoard {
         }
     }
 
-    public List<String> getLines() {
-        List<String> lines = new ArrayList<>(this.lines);
-        Collections.reverse(lines);
-        return lines;
-    }
-
+    /**
+     * Get the player associated with this FastBoard
+     *
+     * @return current player for this FastBoard
+     */
     public Player getPlayer() {
         return player;
     }
 
+    /**
+     * Delete this FastBoard, and will remove the scoreboard for the associated player if he is online.
+     * After this, all uses of {@link #updateLines} and {@link #updateTitle} will throws an {@link IllegalStateException}
+     *
+     * @throws IllegalStateException if this was already call before
+     */
     public void delete() {
         try {
             for (int i = 0; i < lines.size(); i++) {
@@ -241,22 +286,18 @@ public class FastBoard {
         sendPacket(packet);
     }
 
-    private void sendScorePacket(int score, boolean remove) throws ReflectiveOperationException {
+    private void sendScorePacket(int score, ScoreboardAction action) throws ReflectiveOperationException {
         Object packet = PACKET_SB_SCORE.newInstance();
 
         setField(packet, String.class, getColorCode(score), 0);
 
         if (VersionType.V1_8.isHigherOrEqual()) {
-            if (remove) {
-                setField(packet, ENUM_SB_ACTION, ENUM_SB_ACTION_REMOVE);
-            } else {
-                setField(packet, ENUM_SB_ACTION, ENUM_SB_ACTION_CHANGE);
-            }
+            setField(packet, ENUM_SB_ACTION, action == ScoreboardAction.REMOVE ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE);
         } else {
-            setField(packet, int.class, remove ? 1 : 0, 1);
+            setField(packet, int.class, action.ordinal(), 1);
         }
 
-        if (!remove) {
+        if (action == ScoreboardAction.CHANGE) {
             setField(packet, String.class, id, 1);
             setField(packet, int.class, score);
         }
@@ -314,12 +355,14 @@ public class FastBoard {
 
     private void sendPacket(Object packet) throws ReflectiveOperationException {
         if (player == null) {
-            throw new IllegalStateException("FastBoard is deleted");
+            throw new IllegalStateException("This FastBoard is deleted");
         }
 
-        Object entityPlayer = PLAYER_GET_HANDLE.invoke(player);
-        Object playerConnection = PLAYER_CONNECTION.get(entityPlayer);
-        SEND_PACKET.invoke(playerConnection, packet);
+        if (player.isOnline()) {
+            Object entityPlayer = PLAYER_GET_HANDLE.invoke(player);
+            Object playerConnection = PLAYER_CONNECTION.get(entityPlayer);
+            SEND_PACKET.invoke(playerConnection, packet);
+        }
     }
 
     private void setField(Object object, Class<?> fieldType, Object value) throws ReflectiveOperationException {
@@ -361,6 +404,12 @@ public class FastBoard {
     enum TeamMode {
 
         CREATE, REMOVE, UPDATE, ADD_PLAYERS, REMOVE_PLAYERS
+
+    }
+
+    enum ScoreboardAction {
+
+        CHANGE, REMOVE
 
     }
 
