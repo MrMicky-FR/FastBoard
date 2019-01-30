@@ -182,7 +182,7 @@ public class FastBoard {
      * @throws IllegalArgumentException if one line is longer than 30 chars
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
-    public void updateLines(List<String> newLines) {
+    public void updateLines(Collection<String> newLines) {
         int lineCount = 0;
         for (String s : newLines) {
             if (s.length() > 30 && VERSION_TYPE != VersionType.V1_13) {
