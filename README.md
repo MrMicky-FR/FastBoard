@@ -16,6 +16,60 @@ A Scoreboard API for Bukkit with 1.7-1.13 support
 
 ## How to use
 
+### Add FastBoard in your plugin
+**Maven**
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>fr.mrmicky.fastboard</pattern>
+                            <!-- Replace with the package of your plugin ! -->
+                            <shadedPattern>com.yourpackage.fastboard</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+```
+```xml
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+```
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>fr.mrmicky</groupId>
+            <artifactId>FastBoard</artifactId>
+            <version>master-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+```
+
+**Manual**
+
+Just copy `FastBoard.java` and `FastReflection.java` in your plugin
+
+### Crate a scoreboard
 Just create a new `FastBoard` and update the title and the lines
 
 ```java
@@ -34,4 +88,4 @@ board.updateLines(
 ```
 
 ## TODO
-* Deploy to a maven repo
+* Deploy to an other maven repo
