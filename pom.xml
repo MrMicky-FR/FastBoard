@@ -6,9 +6,10 @@
 
     <groupId>fr.mrmicky</groupId>
     <artifactId>fastboard</artifactId>
-    <version>0.3.0</version>
+    <version>1.0.0</version>
 
     <name>FastBoard</name>
+    <url>https://github.com/MrMicky-FR/FastBoard</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,18 +27,12 @@
                 </configuration>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
     </build>
 
     <repositories>
         <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
@@ -49,4 +44,5 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
 </project>
