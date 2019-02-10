@@ -109,7 +109,7 @@ public class FastBoard {
     public FastBoard(Player player) {
         this.player = player;
 
-        id = "fb-" + UUID.randomUUID().toString().substring(0, 8);
+        id = "fb-" + Double.toString(Math.random()).substring(2, 10);
 
         try {
             sendObjectivePacket(ObjectiveMode.CREATE);
