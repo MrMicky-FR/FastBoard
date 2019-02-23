@@ -1,4 +1,6 @@
 # FastBoard
+[![JitPack](https://jitpack.io/v/fr.mrmicky/FastBoard.svg)](https://jitpack.io/#fr.mrmicky/FastBoard)
+[![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
 A Scoreboard API for Bukkit with 1.7-1.13 support
 
@@ -59,7 +61,7 @@ A Scoreboard API for Bukkit with 1.7-1.13 support
         <dependency>
             <groupId>fr.mrmicky</groupId>
             <artifactId>FastBoard</artifactId>
-            <version>master-SNAPSHOT</version>
+            <version>1.0.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
