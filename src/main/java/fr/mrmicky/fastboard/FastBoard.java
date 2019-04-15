@@ -100,11 +100,13 @@ public class FastBoard {
         }
     }
 
-    private Player player;
-    private String id;
+    private final Player player;
+    private final String id;
 
     private String title;
     private List<String> lines = new ArrayList<>();
+
+    private boolean deleted = false;
 
     /**
      * Create a new FastBoard for a player
@@ -245,6 +247,10 @@ public class FastBoard {
         return player;
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
     /**
      * Delete this FastBoard, and will remove the scoreboard for the associated player if he is online.
      * After this, all uses of {@link #updateLines} and {@link #updateTitle} will throws an {@link IllegalStateException}
@@ -262,7 +268,7 @@ public class FastBoard {
             e.printStackTrace();
         }
 
-        player = null;
+        deleted = true;
     }
 
     private void sendObjectivePacket(ObjectiveMode mode) throws ReflectiveOperationException {
@@ -349,7 +355,7 @@ public class FastBoard {
             setField(packet, String.class, "always", 5); // Collisions for 1.9+
 
             if (mode == TeamMode.CREATE) {
-                setField(packet, Collection.class, Collections.singleton(getColorCode(score))); // Players in the team
+                setField(packet, Collection.class, Collections.singletonList(getColorCode(score))); // Players in the team
             }
         }
 
@@ -361,7 +367,7 @@ public class FastBoard {
     }
 
     private void sendPacket(Object packet) throws ReflectiveOperationException {
-        if (player == null) {
+        if (deleted) {
             throw new IllegalStateException("This FastBoard is deleted");
         }
 
