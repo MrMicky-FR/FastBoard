@@ -7,7 +7,12 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Simple Bukkit ScoreBoard API with 1.7 to 1.13.2 support !
@@ -186,7 +191,7 @@ public class FastBoard {
         if (!VersionType.V1_13.isHigherOrEqual()) {
             int lineCount = 0;
             for (String s : newLines) {
-                if (s.length() > 30) {
+                if (s != null && s.length() > 30) {
                     throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
                 }
                 lineCount++;
