@@ -103,7 +103,7 @@ public class FastBoard {
     private final Player player;
     private final String id;
 
-    private String title;
+    private String title = ChatColor.RESET.toString();
     private List<String> lines = new ArrayList<>();
 
     private boolean deleted = false;
@@ -114,7 +114,7 @@ public class FastBoard {
      * @param player the player the scoreboard is for
      */
     public FastBoard(Player player) {
-        this.player = player;
+        this.player = Objects.requireNonNull(player, "player");
 
         id = "fb-" + Double.toString(Math.random()).substring(2, 10);
 
@@ -143,7 +143,7 @@ public class FastBoard {
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public void updateTitle(String title) {
-        if (title.equals(this.title)) {
+        if (this.title.equals(Objects.requireNonNull(title, "title"))) {
             return;
         }
 
@@ -185,14 +185,16 @@ public class FastBoard {
     /**
      * Update the lines of the scoreboard
      *
-     * @param newLines the new scoreboard lines
+     * @param lines the new scoreboard lines
      * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
-    public void updateLines(Collection<String> newLines) {
+    public void updateLines(Collection<String> lines) {
+        Objects.requireNonNull(lines, "lines");
+
         if (!VersionType.V1_13.isHigherOrEqual()) {
             int lineCount = 0;
-            for (String s : newLines) {
+            for (String s : lines) {
                 if (s != null && s.length() > 30) {
                     throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
                 }
@@ -200,17 +202,19 @@ public class FastBoard {
             }
         }
 
-        List<String> oldLines = new ArrayList<>(lines);
-        lines.clear();
-        lines.addAll(newLines);
-        Collections.reverse(lines);
+        List<String> oldLines = new ArrayList<>(this.lines);
+        this.lines.clear();
+        this.lines.addAll(lines);
+        Collections.reverse(this.lines);
+
+        int linesSize = this.lines.size();
 
         try {
-            if (oldLines.size() != lines.size()) {
+            if (oldLines.size() != linesSize) {
                 List<String> oldLinesCopy = new ArrayList<>(oldLines);
 
-                if (oldLinesCopy.size() > lines.size()) {
-                    for (int i = oldLinesCopy.size(); i > lines.size(); i--) {
+                if (oldLinesCopy.size() > linesSize) {
+                    for (int i = oldLinesCopy.size(); i > linesSize; i--) {
                         sendTeamPacket(i - 1, TeamMode.REMOVE);
 
                         sendScorePacket(i - 1, ScoreboardAction.REMOVE);
@@ -218,18 +222,18 @@ public class FastBoard {
                         oldLines.remove(oldLines.size() - 1);
                     }
                 } else {
-                    for (int i = oldLinesCopy.size(); i < lines.size(); i++) {
+                    for (int i = oldLinesCopy.size(); i < linesSize; i++) {
                         sendScorePacket(i, ScoreboardAction.CHANGE);
 
                         sendTeamPacket(i, TeamMode.CREATE);
 
-                        oldLines.add(i, lines.get(i));
+                        oldLines.add(i, this.lines.get(i));
                     }
                 }
             }
 
-            for (int i = 0; i < lines.size(); i++) {
-                if (!Objects.equals(oldLines.get(i), lines.get(i))) {
+            for (int i = 0; i < linesSize; i++) {
+                if (!Objects.equals(oldLines.get(i), this.lines.get(i))) {
                     sendTeamPacket(i, TeamMode.UPDATE);
                 }
             }
@@ -245,6 +249,15 @@ public class FastBoard {
      */
     public Player getPlayer() {
         return player;
+    }
+
+    /**
+     * Get the id of theFastBoard
+     *
+     * @return id
+     */
+    public String getId() {
+        return id;
     }
 
     public boolean isDeleted() {
@@ -278,7 +291,7 @@ public class FastBoard {
         setField(packet, int.class, mode.ordinal());
 
         if (mode != ObjectiveMode.REMOVE) {
-            setComponentField(packet, title != null ? title : ChatColor.RESET.toString(), 1);
+            setComponentField(packet, title, 1);
 
             if (VersionType.V1_8.isHigherOrEqual()) {
                 setField(packet, ENUM_SB_HEALTH_DISPLAY, ENUM_SB_HEALTH_DISPLAY_INTEGER);
