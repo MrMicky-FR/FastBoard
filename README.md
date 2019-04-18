@@ -71,7 +71,7 @@ A Scoreboard API for Bukkit with 1.7-1.13 support
 
 Just copy `FastBoard.java` and `FastReflection.java` in your plugin
 
-### Crate a scoreboard
+### Create a scoreboard
 Just create a new `FastBoard` and update the title and the lines
 
 ```java
@@ -87,6 +87,59 @@ board.updateLines(
         "", // Empty line too
         "Second line"
 );
+```
+
+### Example
+
+Just a small example plugin with a scoreboard that refresh every seconds
+```java
+public final class ExamplePlugin extends JavaPlugin implements Listener {
+
+    private final Map<UUID, FastBoard> boards = new HashMap<>();
+
+    @Override
+    public void onEnable() {
+        getServer().getPluginManager().registerEvents(this, this);
+
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (FastBoard board : boards.values()) {
+                updateBoard(board);
+            }
+        }, 0, 20);
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        Player p = e.getPlayer();
+
+        FastBoard board = new FastBoard(p);
+
+        board.updateTitle(ChatColor.RED + "FastBoard");
+
+        boards.put(p.getUniqueId(), board);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+
+        FastBoard board = boards.remove(p.getUniqueId());
+
+        if (board != null) {
+            board.delete();
+        }
+    }
+
+    private void updateBoard(FastBoard board) {
+        board.updateLines(
+                "",
+                "Online: " + getServer().getOnlinePlayers().size(),
+                "",
+                "Kills: " + board.getPlayer().getStatistic(Statistic.PLAYER_KILLS),
+                ""
+        );
+    }
+}
 ```
 
 ## TODO
