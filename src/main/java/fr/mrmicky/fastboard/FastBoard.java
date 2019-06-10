@@ -122,7 +122,7 @@ public class FastBoard {
             sendObjectivePacket(ObjectiveMode.CREATE);
             sendDisplayObjectivePacket();
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -156,7 +156,7 @@ public class FastBoard {
         try {
             sendObjectivePacket(ObjectiveMode.UPDATE);
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -238,7 +238,7 @@ public class FastBoard {
                 }
             }
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -278,7 +278,7 @@ public class FastBoard {
 
             sendObjectivePacket(ObjectiveMode.REMOVE);
         } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         deleted = true;
