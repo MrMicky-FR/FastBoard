@@ -166,9 +166,7 @@ public class FastBoard {
      * @return the current lines of the scoreboard
      */
     public List<String> getLines() {
-        List<String> lines = new ArrayList<>(this.lines);
-        Collections.reverse(lines);
-        return lines;
+        return new ArrayList<>(lines);
     }
 
     /**
@@ -205,7 +203,6 @@ public class FastBoard {
         List<String> oldLines = new ArrayList<>(this.lines);
         this.lines.clear();
         this.lines.addAll(lines);
-        Collections.reverse(this.lines);
 
         int linesSize = this.lines.size();
 
@@ -213,13 +210,13 @@ public class FastBoard {
             if (oldLines.size() != linesSize) {
                 List<String> oldLinesCopy = new ArrayList<>(oldLines);
 
-                if (oldLinesCopy.size() > linesSize) {
+                if (oldLines.size() > linesSize) {
                     for (int i = oldLinesCopy.size(); i > linesSize; i--) {
                         sendTeamPacket(i - 1, TeamMode.REMOVE);
 
                         sendScorePacket(i - 1, ScoreboardAction.REMOVE);
 
-                        oldLines.remove(oldLines.size() - 1);
+                        oldLines.remove(0);
                     }
                 } else {
                     for (int i = oldLinesCopy.size(); i < linesSize; i++) {
@@ -227,13 +224,13 @@ public class FastBoard {
 
                         sendTeamPacket(i, TeamMode.CREATE);
 
-                        oldLines.add(i, this.lines.get(i));
+                        oldLines.add(oldLines.size() - i, getLineByScore(i));
                     }
                 }
             }
 
             for (int i = 0; i < linesSize; i++) {
-                if (!Objects.equals(oldLines.get(i), this.lines.get(i))) {
+                if (!Objects.equals(getLineByScore(oldLines, i), getLineByScore(i))) {
                     sendTeamPacket(i, TeamMode.UPDATE);
                 }
             }
@@ -282,6 +279,14 @@ public class FastBoard {
         }
 
         deleted = true;
+    }
+
+    private String getLineByScore(int score) {
+        return getLineByScore(lines, score);
+    }
+
+    private String getLineByScore(List<String> lines, int score) {
+        return lines.get(lines.size() - score - 1);
     }
 
     private void sendObjectivePacket(ObjectiveMode mode) throws ReflectiveOperationException {
@@ -342,7 +347,7 @@ public class FastBoard {
         setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
 
         if (mode == TeamMode.CREATE || mode == TeamMode.UPDATE) {
-            String line = lines.get(score);
+            String line = getLineByScore(score);
             String prefix;
             String suffix = null;
 
