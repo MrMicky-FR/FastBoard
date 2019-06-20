@@ -240,6 +240,17 @@ public class FastBoard {
     }
 
     /**
+     * Get the specified scoreboard line
+     *
+     * @param line the line number
+     * @return the line
+     * @throws IndexOutOfBoundsException if the number is higher than the number of lines
+     */
+    public String getLine(int line) {
+        return lines.get(line);
+    }
+
+    /**
      * Get the player associated with this FastBoard
      *
      * @return current player for this FastBoard
