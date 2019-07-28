@@ -367,14 +367,27 @@ public class FastBoard {
             } else if (line.length() <= 16 || VersionType.V1_13.isHigherOrEqual()) {
                 prefix = line;
             } else {
-                prefix = line.substring(0, 16);
+                // Prevent splitting color codes
+                int index = line.charAt(15) == ChatColor.COLOR_CHAR ? 15 : 16;
+                prefix = line.substring(0, index);
+                String suffixTmp = line.substring(index);
+                ChatColor chatColor = null;
+
+                if (suffixTmp.length() >= 2 && suffixTmp.charAt(0) == ChatColor.COLOR_CHAR) {
+                    chatColor = ChatColor.getByChar(suffixTmp.charAt(1));
+                }
+
                 String color = ChatColor.getLastColors(prefix);
-                suffix = (color.isEmpty() ? ChatColor.RESET : color) + line.substring(16);
+                boolean addColor = chatColor == null || chatColor.isFormat();
+
+                suffix = (addColor ? (color.isEmpty() ? ChatColor.RESET : color) : "") + suffixTmp;
             }
 
             if (VERSION_TYPE != VersionType.V1_13) {
                 if (prefix.length() > 16 || (suffix != null && suffix.length() > 16)) {
-                    throw new IllegalArgumentException("Line with score " + score + " is too long: " + line + '(' + prefix + '/' + suffix + ')');
+                    // Something went wrong, just cut to prevent client crash/kick
+                    prefix = prefix.substring(0, 16);
+                    suffix = (suffix != null) ? suffix.substring(0, 16) : null;
                 }
             }
 
