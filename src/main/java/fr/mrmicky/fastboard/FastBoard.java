@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Simple Bukkit ScoreBoard API with 1.7 to 1.14 support !
+ * Simple Bukkit ScoreBoard API with 1.7 to 1.15 support !
  * Everything is at packet level so you don't need to use it in the main server thread.
  * <p>
  * You can find the project on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>
