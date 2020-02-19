@@ -61,7 +61,7 @@ A Scoreboard API for Bukkit with 1.7-1.15 support
         <dependency>
             <groupId>fr.mrmicky</groupId>
             <artifactId>FastBoard</artifactId>
-            <version>1.0.1</version>
+            <version>1.1.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -82,9 +82,9 @@ board.updateTitle(ChatColor.GOLD + "FastBoard");
 
 // Change the lines
 board.updateLines(
-        null, // Empty line
+        "", // Empty line
         "One line",
-        "", // Empty line too
+        "", // Empty line
         "Second line"
 );
 ```

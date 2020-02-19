@@ -2,6 +2,7 @@ package fr.mrmicky.fastboard;
 
 import org.bukkit.Bukkit;
 
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -52,8 +53,8 @@ public final class FastReflection {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public static Object enumValueOf(Class<?> enumClass, String enumName) {
-        return Enum.valueOf((Class<Enum>) enumClass, enumName.toUpperCase());
+    @SuppressWarnings("unchecked")
+    public static <E extends Enum<E>> E enumValueOf(Class<?> enumClass, String enumName) {
+        return Enum.valueOf((Class<E>) enumClass, enumName.toUpperCase(Locale.ROOT));
     }
 }

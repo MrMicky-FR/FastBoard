@@ -109,7 +109,7 @@ public class FastBoard {
     private boolean deleted = false;
 
     /**
-     * Create a new FastBoard for a player
+     * Creates a new FastBoard.
      *
      * @param player the player the scoreboard is for
      */
@@ -127,16 +127,16 @@ public class FastBoard {
     }
 
     /**
-     * Get the current title of the scoreboard.
+     * Get the scoreboard title.
      *
-     * @return current scoreboard title
+     * @return the scoreboard title
      */
     public String getTitle() {
         return title;
     }
 
     /**
-     * Update the scoreboard title. The title can't be longer than 32 chars
+     * Update the scoreboard title.
      *
      * @param title the new scoreboard title
      * @throws IllegalArgumentException if the title is longer than 32 chars on 1.12 or lower
@@ -161,18 +161,82 @@ public class FastBoard {
     }
 
     /**
-     * Get the current lines of the scoreboard
+     * Get the scoreboard lines.
      *
-     * @return the current lines of the scoreboard
+     * @return the scoreboard lines
      */
     public List<String> getLines() {
         return new ArrayList<>(lines);
     }
 
     /**
-     * Update the lines of the scoreboard
+     * Get the specified scoreboard line.
      *
-     * @param lines the new scoreboard lines
+     * @param line the line number
+     * @return the line
+     * @throws IndexOutOfBoundsException if the line is higher than {@code size}
+     */
+    public String getLine(int line) {
+        checkLineNumber(line, true);
+
+        return lines.get(line);
+    }
+
+    /**
+     * Update a single scoreboard line.
+     *
+     * @param line the line number
+     * @param text the new line text
+     * @throws IndexOutOfBoundsException if the line is higher than {@code size} + 1
+     */
+    public void updateLine(int line, String text) {
+        checkLineNumber(line, false);
+
+        try {
+            if (line < size()) {
+                lines.set(line, text);
+
+                sendTeamPacket(getScoreByLine(line), TeamMode.UPDATE);
+                return;
+            }
+
+            List<String> newLines = new ArrayList<>(lines);
+
+            if (line > size()) {
+                for (int i = size(); i < line; i++) {
+                    newLines.add("");
+                }
+            }
+
+            newLines.add(text);
+
+            updateLines(newLines);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Remove a scoreboard line.
+     *
+     * @param line the line number
+     */
+    public void removeLine(int line) {
+        checkLineNumber(line, false);
+
+        if (line >= size()) {
+            return; // The line don't exists
+        }
+
+        List<String> lines = new ArrayList<>(this.lines);
+        lines.remove(line);
+        updateLines(lines);
+    }
+
+    /**
+     * Update all the scoreboard lines.
+     *
+     * @param lines the new lines
      * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
@@ -240,18 +304,7 @@ public class FastBoard {
     }
 
     /**
-     * Get the specified scoreboard line
-     *
-     * @param line the line number
-     * @return the line
-     * @throws IndexOutOfBoundsException if the number is higher than the number of lines
-     */
-    public String getLine(int line) {
-        return lines.get(line);
-    }
-
-    /**
-     * Get the player associated with this FastBoard
+     * Get the player who has the scoreboard.
      *
      * @return current player for this FastBoard
      */
@@ -260,16 +313,30 @@ public class FastBoard {
     }
 
     /**
-     * Get the id of theFastBoard
+     * Get the scoreboard id.
      *
-     * @return id
+     * @return the id
      */
     public String getId() {
         return id;
     }
 
+    /**
+     * Get if the scoreboard is deleted.
+     *
+     * @return true if the scoreboard is deleted
+     */
     public boolean isDeleted() {
         return deleted;
+    }
+
+    /**
+     * Get the scoreboard size (the number of lines).
+     *
+     * @return the size
+     */
+    public int size() {
+        return lines.size();
     }
 
     /**
@@ -290,6 +357,20 @@ public class FastBoard {
         }
 
         deleted = true;
+    }
+
+    private void checkLineNumber(int line, boolean checkMax) {
+        if (line < 0) {
+            throw new IllegalArgumentException("Line number must be positive");
+        }
+
+        if (checkMax && line >= lines.size()) {
+            throw new IllegalArgumentException("Line number must be under " + lines.size());
+        }
+    }
+
+    private int getScoreByLine(int line) {
+        return lines.size() - line - 1;
     }
 
     private String getLineByScore(int score) {
