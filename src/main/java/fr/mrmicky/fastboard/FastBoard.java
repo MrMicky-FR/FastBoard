@@ -5,7 +5,6 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import net.minecraft.server.v1_15_R1.IScoreboardCriteria;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -279,7 +278,7 @@ public class FastBoard {
 
         if (mode != ObjectiveMode.REMOVE) {
             packet.getChatComponents().write(0, WrappedChatComponent.fromText(title));
-            packet.getEnumModifier(IScoreboardCriteria.EnumScoreboardHealthDisplay.class, IScoreboardCriteria.EnumScoreboardHealthDisplay.INTEGER.getClass()).write(0, IScoreboardCriteria.EnumScoreboardHealthDisplay.INTEGER);
+            packet.getEnumModifier(HealthDisplay.class, 2).write(0, HealthDisplay.INTEGER);
         }
 
         sendPacket(packet);
@@ -382,5 +381,9 @@ public class FastBoard {
 
         CREATE, REMOVE, UPDATE, ADD_PLAYERS, REMOVE_PLAYERS
 
+    }
+
+    enum HealthDisplay {
+        INTEGER, HEARTS
     }
 }
