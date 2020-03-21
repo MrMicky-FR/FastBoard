@@ -33,7 +33,7 @@ A Scoreboard API for Bukkit with 1.15 support
         <dependency>
             <groupId>com.github.Ytnoos</groupId>
             <artifactId>FastBoard</artifactId>
-            <version>v1.2.1</version>
+            <version>1.2.1</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
