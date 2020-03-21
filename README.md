@@ -1,5 +1,5 @@
 # FastBoard
-[![JitPack](https://jitpack.io/v/fr.mrmicky/FastBoard.svg)](https://jitpack.io/#fr.mrmicky/FastBoard)
+[![JitPack](https://jitpack.io/v/Ytnoos/FastBoard.svg)](https://jitpack.io/#YtnoosFastBoard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
 A Scoreboard API for Bukkit with 1.15 support
