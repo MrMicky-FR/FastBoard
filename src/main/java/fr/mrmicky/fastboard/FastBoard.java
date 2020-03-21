@@ -1,104 +1,28 @@
 package fr.mrmicky.fastboard;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import net.minecraft.server.v1_15_R1.IScoreboardCriteria;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
- * Simple Bukkit ScoreBoard API with 1.7 to 1.15 support !
+ * Simple Bukkit ScoreBoard API with 1.15 support !
  * Everything is at packet level so you don't need to use it in the main server thread.
  * <p>
  * You can find the project on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>
+ * Fork:  <a href="https://github.com/Ytnoos/FastBoard">GitHub</a>
  *
  * @author MrMicky
+ * @author Ytnoos
  */
 public class FastBoard {
-
-    private static final VersionType VERSION_TYPE;
-
-    // Packets sending
-    private static final Field PLAYER_CONNECTION;
-    private static final Method SEND_PACKET;
-    private static final Method PLAYER_GET_HANDLE;
-
-    // Chat components
-    private static final Class<?> CHAT_COMPONENT_CLASS;
-    private static final Method MESSAGE_FROM_STRING;
-
-    // Scoreboard packets
-    private static final Constructor<?> PACKET_SB_OBJ;
-    private static final Constructor<?> PACKET_SB_DISPLAY_OBJ;
-    private static final Constructor<?> PACKET_SB_SCORE;
-    private static final Constructor<?> PACKET_SB_TEAM;
-
-    // Scoreboard enums
-    private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
-    private static final Class<?> ENUM_SB_ACTION;
-    private static final Object ENUM_SB_HEALTH_DISPLAY_INTEGER;
-    private static final Object ENUM_SB_ACTION_CHANGE;
-    private static final Object ENUM_SB_ACTION_REMOVE;
-
-    static {
-        try {
-            if (FastReflection.nmsOptionalClass("ScoreboardServer$Action").isPresent()) {
-                VERSION_TYPE = VersionType.V1_13;
-            } else if (FastReflection.nmsOptionalClass("IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()) {
-                VERSION_TYPE = VersionType.V1_8;
-            } else {
-                VERSION_TYPE = VersionType.V1_7;
-            }
-
-            Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
-            Class<?> entityPlayerClass = FastReflection.nmsClass("EntityPlayer");
-            Class<?> playerConnectionClass = FastReflection.nmsClass("PlayerConnection");
-            Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
-
-            MESSAGE_FROM_STRING = craftChatMessageClass.getDeclaredMethod("fromString", String.class);
-            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("IChatBaseComponent");
-
-            PLAYER_GET_HANDLE = craftPlayerClass.getDeclaredMethod("getHandle");
-            PLAYER_CONNECTION = entityPlayerClass.getDeclaredField("playerConnection");
-            SEND_PACKET = playerConnectionClass.getDeclaredMethod("sendPacket", FastReflection.nmsClass("Packet"));
-
-            PACKET_SB_OBJ = FastReflection.nmsClass("PacketPlayOutScoreboardObjective").getConstructor();
-            PACKET_SB_DISPLAY_OBJ = FastReflection.nmsClass("PacketPlayOutScoreboardDisplayObjective").getConstructor();
-            PACKET_SB_SCORE = FastReflection.nmsClass("PacketPlayOutScoreboardScore").getConstructor();
-            PACKET_SB_TEAM = FastReflection.nmsClass("PacketPlayOutScoreboardTeam").getConstructor();
-
-            if (VersionType.V1_8.isHigherOrEqual()) {
-                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("IScoreboardCriteria$EnumScoreboardHealthDisplay");
-
-                if (VersionType.V1_13.isHigherOrEqual()) {
-                    ENUM_SB_ACTION = FastReflection.nmsClass("ScoreboardServer$Action");
-                } else {
-                    ENUM_SB_ACTION = FastReflection.nmsClass("PacketPlayOutScoreboardScore$EnumScoreboardAction");
-                }
-
-                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
-                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE");
-                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE");
-            } else {
-                ENUM_SB_HEALTH_DISPLAY = null;
-                ENUM_SB_ACTION = null;
-
-                ENUM_SB_HEALTH_DISPLAY_INTEGER = null;
-                ENUM_SB_ACTION_CHANGE = null;
-                ENUM_SB_ACTION_REMOVE = null;
-            }
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
 
     private final Player player;
     private final String id;
@@ -118,12 +42,8 @@ public class FastBoard {
 
         id = "fb-" + Double.toString(Math.random()).substring(2, 10);
 
-        try {
-            sendObjectivePacket(ObjectiveMode.CREATE);
-            sendDisplayObjectivePacket();
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
+        sendObjectivePacket(ObjectiveMode.CREATE);
+        sendDisplayObjectivePacket();
     }
 
     /**
@@ -147,17 +67,9 @@ public class FastBoard {
             return;
         }
 
-        if (!VersionType.V1_13.isHigherOrEqual() && title.length() > 32) {
-            throw new IllegalArgumentException("Title is longer than 32 chars");
-        }
-
         this.title = title;
 
-        try {
-            sendObjectivePacket(ObjectiveMode.UPDATE);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
+        sendObjectivePacket(ObjectiveMode.UPDATE);
     }
 
     /**
@@ -192,28 +104,24 @@ public class FastBoard {
     public void updateLine(int line, String text) {
         checkLineNumber(line, false);
 
-        try {
-            if (line < size()) {
-                lines.set(line, text);
+        if (line < size()) {
+            lines.set(line, text);
 
-                sendTeamPacket(getScoreByLine(line), TeamMode.UPDATE);
-                return;
-            }
-
-            List<String> newLines = new ArrayList<>(lines);
-
-            if (line > size()) {
-                for (int i = size(); i < line; i++) {
-                    newLines.add("");
-                }
-            }
-
-            newLines.add(text);
-
-            updateLines(newLines);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
+            sendTeamPacket(getScoreByLine(line), TeamMode.UPDATE);
+            return;
         }
+
+        List<String> newLines = new ArrayList<>(lines);
+
+        if (line > size()) {
+            for (int i = size(); i < line; i++) {
+                newLines.add("");
+            }
+        }
+
+        newLines.add(text);
+
+        updateLines(newLines);
     }
 
     /**
@@ -254,52 +162,38 @@ public class FastBoard {
     public void updateLines(Collection<String> lines) {
         Objects.requireNonNull(lines, "lines");
 
-        if (!VersionType.V1_13.isHigherOrEqual()) {
-            int lineCount = 0;
-            for (String s : lines) {
-                if (s != null && s.length() > 30) {
-                    throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
-                }
-                lineCount++;
-            }
-        }
-
         List<String> oldLines = new ArrayList<>(this.lines);
         this.lines.clear();
         this.lines.addAll(lines);
 
         int linesSize = this.lines.size();
 
-        try {
-            if (oldLines.size() != linesSize) {
-                List<String> oldLinesCopy = new ArrayList<>(oldLines);
+        if (oldLines.size() != linesSize) {
+            List<String> oldLinesCopy = new ArrayList<>(oldLines);
 
-                if (oldLines.size() > linesSize) {
-                    for (int i = oldLinesCopy.size(); i > linesSize; i--) {
-                        sendTeamPacket(i - 1, TeamMode.REMOVE);
+            if (oldLines.size() > linesSize) {
+                for (int i = oldLinesCopy.size(); i > linesSize; i--) {
+                    sendTeamPacket(i - 1, TeamMode.REMOVE);
 
-                        sendScorePacket(i - 1, ScoreboardAction.REMOVE);
+                    sendScorePacket(i - 1, EnumWrappers.ScoreboardAction.REMOVE);
 
-                        oldLines.remove(0);
-                    }
-                } else {
-                    for (int i = oldLinesCopy.size(); i < linesSize; i++) {
-                        sendScorePacket(i, ScoreboardAction.CHANGE);
+                    oldLines.remove(0);
+                }
+            } else {
+                for (int i = oldLinesCopy.size(); i < linesSize; i++) {
+                    sendScorePacket(i, EnumWrappers.ScoreboardAction.CHANGE);
 
-                        sendTeamPacket(i, TeamMode.CREATE);
+                    sendTeamPacket(i, TeamMode.CREATE);
 
-                        oldLines.add(oldLines.size() - i, getLineByScore(i));
-                    }
+                    oldLines.add(oldLines.size() - i, getLineByScore(i));
                 }
             }
+        }
 
-            for (int i = 0; i < linesSize; i++) {
-                if (!Objects.equals(getLineByScore(oldLines, i), getLineByScore(i))) {
-                    sendTeamPacket(i, TeamMode.UPDATE);
-                }
+        for (int i = 0; i < linesSize; i++) {
+            if (!Objects.equals(getLineByScore(oldLines, i), getLineByScore(i))) {
+                sendTeamPacket(i, TeamMode.UPDATE);
             }
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -346,15 +240,11 @@ public class FastBoard {
      * @throws IllegalStateException if this was already call before
      */
     public void delete() {
-        try {
-            for (int i = 0; i < lines.size(); i++) {
-                sendTeamPacket(i, TeamMode.REMOVE);
-            }
-
-            sendObjectivePacket(ObjectiveMode.REMOVE);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
+        for (int i = 0; i < lines.size(); i++) {
+            sendTeamPacket(i, TeamMode.REMOVE);
         }
+
+        sendObjectivePacket(ObjectiveMode.REMOVE);
 
         deleted = true;
     }
@@ -381,62 +271,50 @@ public class FastBoard {
         return lines.get(lines.size() - score - 1);
     }
 
-    private void sendObjectivePacket(ObjectiveMode mode) throws ReflectiveOperationException {
-        Object packet = PACKET_SB_OBJ.newInstance();
+    private void sendObjectivePacket(ObjectiveMode mode) {
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SCOREBOARD_OBJECTIVE);
 
-        setField(packet, String.class, id);
-        setField(packet, int.class, mode.ordinal());
+        packet.getStrings().write(0, id);
+        packet.getIntegers().write(0, mode.ordinal());
 
         if (mode != ObjectiveMode.REMOVE) {
-            setComponentField(packet, title, 1);
-
-            if (VersionType.V1_8.isHigherOrEqual()) {
-                setField(packet, ENUM_SB_HEALTH_DISPLAY, ENUM_SB_HEALTH_DISPLAY_INTEGER);
-            }
-        } else if (VERSION_TYPE == VersionType.V1_7) {
-            setField(packet, String.class, "", 1);
+            packet.getChatComponents().write(0, WrappedChatComponent.fromText(title));
+            packet.getEnumModifier(IScoreboardCriteria.EnumScoreboardHealthDisplay.class, IScoreboardCriteria.EnumScoreboardHealthDisplay.INTEGER.getClass()).write(0, IScoreboardCriteria.EnumScoreboardHealthDisplay.INTEGER);
         }
 
         sendPacket(packet);
     }
 
-    private void sendDisplayObjectivePacket() throws ReflectiveOperationException {
-        Object packet = PACKET_SB_DISPLAY_OBJ.newInstance();
+    private void sendDisplayObjectivePacket() {
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE);
 
-        setField(packet, int.class, 1);
-        setField(packet, String.class, id);
+        packet.getIntegers().write(0, 1);
+        packet.getStrings().write(0, id);
 
         sendPacket(packet);
     }
 
-    private void sendScorePacket(int score, ScoreboardAction action) throws ReflectiveOperationException {
-        Object packet = PACKET_SB_SCORE.newInstance();
+    private void sendScorePacket(int score, EnumWrappers.ScoreboardAction action) {
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SCOREBOARD_SCORE);
 
-        setField(packet, String.class, getColorCode(score), 0);
-
-        if (VersionType.V1_8.isHigherOrEqual()) {
-            setField(packet, ENUM_SB_ACTION, action == ScoreboardAction.REMOVE ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE);
-        } else {
-            setField(packet, int.class, action.ordinal(), 1);
-        }
-
-        if (action == ScoreboardAction.CHANGE) {
-            setField(packet, String.class, id, 1);
-            setField(packet, int.class, score);
+        packet.getStrings().write(0, getColorCode(score));
+        packet.getScoreboardActions().write(0, action);
+        if (action == EnumWrappers.ScoreboardAction.CHANGE) {
+            packet.getStrings().write(1, id);
+            packet.getIntegers().write(0, score);
         }
 
         sendPacket(packet);
     }
 
-    private void sendTeamPacket(int score, TeamMode mode) throws ReflectiveOperationException {
+    private void sendTeamPacket(int score, TeamMode mode) {
         if (mode == TeamMode.ADD_PLAYERS || mode == TeamMode.REMOVE_PLAYERS) {
             throw new UnsupportedOperationException();
         }
 
-        Object packet = PACKET_SB_TEAM.newInstance();
-
-        setField(packet, String.class, id + ':' + score); // Team name
-        setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SCOREBOARD_TEAM);
+        packet.getStrings().write(0, id + ":" + score);
+        packet.getIntegers().write(0, mode.ordinal());
 
         if (mode == TeamMode.CREATE || mode == TeamMode.UPDATE) {
             String line = getLineByScore(score);
@@ -445,7 +323,7 @@ public class FastBoard {
 
             if (line == null || line.isEmpty()) {
                 prefix = getColorCode(score) + ChatColor.RESET;
-            } else if (line.length() <= 16 || VersionType.V1_13.isHigherOrEqual()) {
+            } else if (line.length() <= 16) {
                 prefix = line;
             } else {
                 // Prevent splitting color codes
@@ -464,21 +342,13 @@ public class FastBoard {
                 suffix = (addColor ? (color.isEmpty() ? ChatColor.RESET : color) : "") + suffixTmp;
             }
 
-            if (VERSION_TYPE != VersionType.V1_13) {
-                if (prefix.length() > 16 || (suffix != null && suffix.length() > 16)) {
-                    // Something went wrong, just cut to prevent client crash/kick
-                    prefix = prefix.substring(0, 16);
-                    suffix = (suffix != null) ? suffix.substring(0, 16) : null;
-                }
-            }
-
-            setComponentField(packet, prefix, 2); // Prefix
-            setComponentField(packet, suffix == null ? "" : suffix, 3); // Suffix
-            setField(packet, String.class, "always", 4); // Visibility for 1.8+
-            setField(packet, String.class, "always", 5); // Collisions for 1.9+
+            packet.getChatComponents().write(1, WrappedChatComponent.fromText(prefix));
+            packet.getChatComponents().write(2, WrappedChatComponent.fromText(suffix == null ? "" : suffix));
+            packet.getStrings().write(1, "always");
+            packet.getStrings().write(2, "always");
 
             if (mode == TeamMode.CREATE) {
-                setField(packet, Collection.class, Collections.singletonList(getColorCode(score))); // Players in the team
+                packet.getSpecificModifier(Collection.class).write(0, Collections.singletonList(getColorCode(score)));
             }
         }
 
@@ -489,44 +359,15 @@ public class FastBoard {
         return ChatColor.values()[score].toString();
     }
 
-    private void sendPacket(Object packet) throws ReflectiveOperationException {
+    private void sendPacket(PacketContainer packetContainer) {
         if (deleted) {
             throw new IllegalStateException("This FastBoard is deleted");
         }
-
         if (player.isOnline()) {
-            Object entityPlayer = PLAYER_GET_HANDLE.invoke(player);
-            Object playerConnection = PLAYER_CONNECTION.get(entityPlayer);
-            SEND_PACKET.invoke(playerConnection, packet);
-        }
-    }
-
-    private void setField(Object object, Class<?> fieldType, Object value) throws ReflectiveOperationException {
-        setField(object, fieldType, value, 0);
-    }
-
-    private void setField(Object object, Class<?> fieldType, Object value, int count) throws ReflectiveOperationException {
-        int i = 0;
-
-        for (Field f : object.getClass().getDeclaredFields()) {
-            if (f.getType() == fieldType && i++ == count) {
-                f.setAccessible(true);
-                f.set(object, value);
-            }
-        }
-    }
-
-    private void setComponentField(Object object, String value, int count) throws ReflectiveOperationException {
-        if (VERSION_TYPE != VersionType.V1_13) {
-            setField(object, String.class, value, count);
-            return;
-        }
-
-        int i = 0;
-        for (Field f : object.getClass().getDeclaredFields()) {
-            if ((f.getType() == String.class || f.getType() == CHAT_COMPONENT_CLASS) && i++ == count) {
-                f.setAccessible(true);
-                f.set(object, Array.get(MESSAGE_FROM_STRING.invoke(null, value), 0));
+            try {
+                ProtocolLibrary.getProtocolManager().sendServerPacket(player, packetContainer);
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -541,20 +382,5 @@ public class FastBoard {
 
         CREATE, REMOVE, UPDATE, ADD_PLAYERS, REMOVE_PLAYERS
 
-    }
-
-    enum ScoreboardAction {
-
-        CHANGE, REMOVE
-
-    }
-
-    enum VersionType {
-
-        V1_7, V1_8, V1_13;
-
-        public boolean isHigherOrEqual() {
-            return VERSION_TYPE.ordinal() >= ordinal();
-        }
     }
 }
