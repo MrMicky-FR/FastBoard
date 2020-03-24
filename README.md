@@ -8,7 +8,7 @@ A Scoreboard API for Bukkit with 1.15 support
 
 * No flickering (and without using a buffer !)
 * Works with 1.15 !
-* Really small (around 500 lines with everything) and don't use any dependency
+* Really small (around 500 lines with everything)
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can just give String list (or array) to change all the lines
 * Everything is at packet level so it works with other plugins using scoreboard and/or teams
