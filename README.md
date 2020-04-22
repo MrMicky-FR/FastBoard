@@ -2,6 +2,7 @@
 [![JitPack](https://jitpack.io/v/Ytnoos/FastBoard.svg)](https://jitpack.io/#YtnoosFastBoard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
+
 A Scoreboard API for Bukkit with 1.15 support
 
 ## Features
@@ -9,18 +10,22 @@ A Scoreboard API for Bukkit with 1.15 support
 * No flickering (and without using a buffer !)
 * Works with 1.15 !
 * Really small (around 500 lines with everything)
+
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can just give String list (or array) to change all the lines
-* Everything is at packet level so it works with other plugins using scoreboard and/or teams
+* Everything is at packet level, so it works with other plugins using scoreboard and/or teams
 * Can be use in an async thread (but is not thread safe yet)
+
 * No characters limit!
 * ProtocolLib dependency
 
 ## How to use
 
 ### Add FastBoard in your plugin
-**Maven**
+
+#### Maven
 ```xml
+
     <repositories>
         <repository>
             <id>jitpack.io</id>
@@ -37,9 +42,48 @@ A Scoreboard API for Bukkit with 1.15 support
             <scope>compile</scope>
         </dependency>
     </dependencies>
+=======
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>3.2.1</version>
+            <executions>
+                <execution>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>shade</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <relocations>
+                    <relocation>
+                        <pattern>fr.mrmicky.fastboard</pattern>
+                        <!-- Replace with the package of your plugin ! -->
+                        <shadedPattern>com.yourpackage.fastboard</shadedPattern>
+                    </relocation>
+                </relocations>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 ```
 
-**Manual**
+#### Gradle
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+```
+```groovy
+dependencies {
+    compile 'fr.mrmicky:FastBoard:1.1.0'
+}
+```
+
+#### Manual
 
 Just copy `FastBoard.java` in your plugin
 
@@ -61,10 +105,26 @@ board.updateLines(
 );
 ```
 
-### Example
+## Example
 
-Just a small example plugin with a scoreboard that refresh every seconds
+Just a small example plugin with a scoreboard that refresh every second :
 ```java
+package fr.mrmicky.fastboard.example;
+
+import fr.mrmicky.fastboard.FastBoard;
+import org.bukkit.ChatColor;
+import org.bukkit.Statistic;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class ExamplePlugin extends JavaPlugin implements Listener {
 
     private final Map<UUID, FastBoard> boards = new HashMap<>();
@@ -82,20 +142,20 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        Player p = e.getPlayer();
+        Player player = e.getPlayer();
 
-        FastBoard board = new FastBoard(p);
+        FastBoard board = new FastBoard(player);
 
         board.updateTitle(ChatColor.RED + "FastBoard");
 
-        boards.put(p.getUniqueId(), board);
+        boards.put(player.getUniqueId(), board);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
-        Player p = e.getPlayer();
+        Player player = e.getPlayer();
 
-        FastBoard board = boards.remove(p.getUniqueId());
+        FastBoard board = boards.remove(player.getUniqueId());
 
         if (board != null) {
             board.delete();
@@ -115,4 +175,4 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 ```
 
 ## TODO
-* Deploy to an other maven repo
+* Deploy to another maven repo
