@@ -461,7 +461,7 @@ public class FastBoard {
                 String color = ChatColor.getLastColors(prefix);
                 boolean addColor = chatColor == null || chatColor.isFormat();
 
-                suffix = (addColor ? (color.isEmpty() ? ChatColor.RESET : color) : "") + suffixTmp;
+                suffix = (addColor ? (color.isEmpty() ? ChatColor.RESET.toString() : color) : "") + suffixTmp;
             }
 
             if (VERSION_TYPE != VersionType.V1_13) {
