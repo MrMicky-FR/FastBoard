@@ -2,12 +2,12 @@
 [![JitPack](https://jitpack.io/v/fr.mrmicky/FastBoard.svg)](https://jitpack.io/#fr.mrmicky/FastBoard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-A Scoreboard API for Bukkit with 1.7-1.15 support.
+A Scoreboard API for Bukkit with 1.7-1.16 support.
 
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all version from 1.7.10 to 1.15
+* Works with all version from 1.7.10 to 1.16.
 * Really small (around 500 lines with everything) and don't use any dependency
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can just give String list (or array) to change all the lines
