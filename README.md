@@ -15,6 +15,7 @@ A Scoreboard API for Bukkit with 1.7-1.16 support.
 * Can be use in an async thread (but is not thread safe yet)
 * Support up to 30 characters per line on 1.7-1.12
 * No characters limit on 1.13+
+* Support 1.16 custom hex colors
 
 ## How to use
 
