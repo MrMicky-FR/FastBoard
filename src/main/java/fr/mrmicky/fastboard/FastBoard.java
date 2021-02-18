@@ -486,7 +486,8 @@ public class FastBoard {
     }
 
     private String getColorCode(int score) {
-        return ChatColor.values()[score].toString();
+        ChatColor[] colors = ChatColor.values();
+        return colors[Math.max(Math.min(score, colors.length - 1), 0)].toString();
     }
 
     private void sendPacket(Object packet) throws ReflectiveOperationException {
