@@ -2,33 +2,33 @@
 [![JitPack](https://jitpack.io/v/fr.mrmicky/FastBoard.svg)](https://jitpack.io/#fr.mrmicky/FastBoard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-A Scoreboard API for Bukkit with 1.7-1.16 support.
+Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 support.
+
+⚠️ To use FastBoard on a 1.8 server, the server must be on 1.8.8.
 
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all version from 1.7.10 to 1.16.
-* Really small (around 500 lines with everything) and don't use any dependency
+* Works with all versions from 1.7.10 to 1.16
+* Very small (around 550 lines of code with the JavaDoc) and no dependencies
 * Easy to use
-* Dynamic scoreboard size: you don't need to add/remove lines, you can just give String list (or array) to change all the lines
+* Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all the lines
 * Everything is at packet level, so it works with other plugins using scoreboard and/or teams
-* Can be use in an async thread (but is not thread safe yet)
-* Support up to 30 characters per line on 1.7-1.12
-* No characters limit on 1.13+
-* Support 1.16 custom hex colors
+* Can be used in an async thread
+* Supports up to 30 characters per line on 1.7-1.12
+* No character limit on 1.13 and higher
+* Supports hex colors on 1.16 and higher
 
-## How to use
+## Installation
 
-### Add FastBoard in your plugin
-
-#### Maven
+### Maven
 ```xml
 <build>
     <plugins>
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
-            <version>3.2.1</version>
+            <version>3.2.4</version>
             <executions>
                 <execution>
                     <phase>package</phase>
@@ -41,7 +41,7 @@ A Scoreboard API for Bukkit with 1.7-1.16 support.
                 <relocations>
                     <relocation>
                         <pattern>fr.mrmicky.fastboard</pattern>
-                        <!-- Replace with the package of your plugin ! -->
+                        <!-- Replace 'com.yourpackage' with the package of your plugin ! -->
                         <shadedPattern>com.yourpackage.fastboard</shadedPattern>
                     </relocation>
                 </relocations>
@@ -69,7 +69,13 @@ A Scoreboard API for Bukkit with 1.7-1.16 support.
 </dependencies>
 ```
 
-#### Gradle
+### Gradle
+
+```groovy
+plugins {
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+}
+```
 ```groovy
 repositories {
     maven { url 'https://jitpack.io' }
@@ -77,15 +83,24 @@ repositories {
 ```
 ```groovy
 dependencies {
-    compile 'fr.mrmicky:FastBoard:1.1.0'
+    implementation 'fr.mrmicky:FastBoard:1.1.0'
+}
+```
+```groovy
+shadowJar {
+    // Replace 'com.yourpackage' with the package of your plugin 
+    relocate 'fr.mrmicky.fastboard', 'com.yourpackage.fastboard'
 }
 ```
 
-#### Manual
+### Manual
 
-Just copy `FastBoard.java` and `FastReflection.java` in your plugin
+Copy `FastBoard.java` and `FastReflection.java` in your plugin
 
-### Create a scoreboard
+## Usage
+
+### Creating a scoreboard
+
 Just create a new `FastBoard` and update the title and the lines
 
 ```java
@@ -103,9 +118,10 @@ board.updateLines(
 );
 ```
 
-## Example
+### Example
 
-Just a small example plugin with a scoreboard that refresh every second :
+Just a small example plugin with a scoreboard that refreshes every second:
+
 ```java
 package fr.mrmicky.fastboard.example;
 
@@ -132,7 +148,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         getServer().getScheduler().runTaskTimer(this, () -> {
-            for (FastBoard board : boards.values()) {
+            for (FastBoard board : this.boards.values()) {
                 updateBoard(board);
             }
         }, 0, 20);
@@ -146,14 +162,14 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 
         board.updateTitle(ChatColor.RED + "FastBoard");
 
-        boards.put(player.getUniqueId(), board);
+        this.boards.put(player.getUniqueId(), board);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player player = e.getPlayer();
 
-        FastBoard board = boards.remove(player.getUniqueId());
+        FastBoard board = this.boards.remove(player.getUniqueId());
 
         if (board != null) {
             board.delete();
@@ -163,7 +179,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
     private void updateBoard(FastBoard board) {
         board.updateLines(
                 "",
-                "Online: " + getServer().getOnlinePlayers().size(),
+                "Players: " + getServer().getOnlinePlayers().size(),
                 "",
                 "Kills: " + board.getPlayer().getStatistic(Statistic.PLAYER_KILLS),
                 ""
