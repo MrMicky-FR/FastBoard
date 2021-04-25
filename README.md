@@ -1,6 +1,6 @@
 # FastBoard
 [![Java CI](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml/badge.svg)](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml)
-[![Sonatype Snapshots](https://img.shields.io/nexus/s/fr.mrmicky/fastboard?label=sonatype%20snapshots&server=https%3A%2F%2Fs01.oss.sonatype.org)]()
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/fr.mrmicky/fastboard?label=sonatype%20snapshots&server=https%3A%2F%2Fs01.oss.sonatype.org)](pom.xml)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
 Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 support.
