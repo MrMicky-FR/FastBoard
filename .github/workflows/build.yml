@@ -1,0 +1,28 @@
+name: Java CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: [8, 11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.java-version }}
+
+      - name: Build
+        run: mvn -B package

@@ -44,6 +44,7 @@ import java.util.Objects;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
+ * @version 1.2.0-SNAPSHOT
  */
 public class FastBoard {
 
