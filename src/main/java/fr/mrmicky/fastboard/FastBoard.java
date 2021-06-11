@@ -31,6 +31,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -52,19 +54,23 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class FastBoard {
 
-    private static final Map<Class<?>, List<Field>> PACKETS = new HashMap<>(8);
+    private static final Map<Class<?>, Field[]> PACKETS = new HashMap<>(8);
     private static final VersionType VERSION_TYPE;
     // Packets and components
     private static final Class<?> CHAT_COMPONENT_CLASS;
+    private static final Class<?> CHAT_FORMAT_ENUM;
+    private static final Object EMPTY_MESSAGE;
+    private static final Object RESET_FORMATTING;
     private static final MethodHandle MESSAGE_FROM_STRING;
     private static final MethodHandle PLAYER_CONNECTION;
     private static final MethodHandle SEND_PACKET;
     private static final MethodHandle PLAYER_GET_HANDLE;
     // Scoreboard packets
-    private static final MethodHandle PACKET_SB_OBJ;
-    private static final MethodHandle PACKET_SB_DISPLAY_OBJ;
-    private static final MethodHandle PACKET_SB_SCORE;
-    private static final MethodHandle PACKET_SB_TEAM;
+    private static final FastReflection.PacketConstructor PACKET_SB_OBJ;
+    private static final FastReflection.PacketConstructor PACKET_SB_DISPLAY_OBJ;
+    private static final FastReflection.PacketConstructor PACKET_SB_SCORE;
+    private static final FastReflection.PacketConstructor PACKET_SB_TEAM;
+    private static final FastReflection.PacketConstructor PACKET_SB_SERIALIZABLE_TEAM;
     // Scoreboard enums
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
     private static final Class<?> ENUM_SB_ACTION;
@@ -75,39 +81,57 @@ public class FastBoard {
     static {
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodType voidType = MethodType.methodType(void.class);
 
-            if (FastReflection.nmsOptionalClass("ScoreboardServer$Action").isPresent()) {
+            if (FastReflection.isRepackaged()) {
+                VERSION_TYPE = VersionType.V1_17;
+            } else if (FastReflection.nmsOptionalClass(null, "ScoreboardServer$Action").isPresent()) {
                 VERSION_TYPE = VersionType.V1_13;
-            } else if (FastReflection.nmsOptionalClass("IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()) {
+            } else if (FastReflection.nmsOptionalClass(null, "IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()) {
                 VERSION_TYPE = VersionType.V1_8;
             } else {
                 VERSION_TYPE = VersionType.V1_7;
             }
 
+            String gameProtocolPackage = "network.protocol.game";
             Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
             Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
-            Class<?> entityPlayerClass = FastReflection.nmsClass("EntityPlayer");
-            Class<?> playerConnectionClass = FastReflection.nmsClass("PlayerConnection");
-            Class<?> packetClass = FastReflection.nmsClass("Packet");
-            Class<?> packetSbObjClass = FastReflection.nmsClass("PacketPlayOutScoreboardObjective");
-            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass("PacketPlayOutScoreboardDisplayObjective");
-            Class<?> packetSbScoreClass = FastReflection.nmsClass("PacketPlayOutScoreboardScore");
-            Class<?> packetSbTeamClass = FastReflection.nmsClass("PacketPlayOutScoreboardTeam");
+            Class<?> entityPlayerClass = FastReflection.nmsClass("server.level", "EntityPlayer");
+            Class<?> playerConnectionClass = FastReflection.nmsClass("server.network", "PlayerConnection");
+            Class<?> packetClass = FastReflection.nmsClass("network.protocol", "Packet");
+            Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective");
+            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective");
+            Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore");
+            Class<?> packetSbTeamClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam");
+            Class<?> sbTeamClass = VersionType.V1_17.isHigherOrEqual()
+                    ? FastReflection.innerClass(packetSbTeamClass, innerClass -> !innerClass.isEnum()) : null;
+            Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
+                    .filter(field -> field.getType().isAssignableFrom(playerConnectionClass))
+                    .findFirst().orElseThrow(NoSuchFieldException::new);
 
             MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
-            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("IChatBaseComponent");
+            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
+            CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat");
+            EMPTY_MESSAGE = Array.get(MESSAGE_FROM_STRING.invoke(""), 0);
+            RESET_FORMATTING = FastReflection.enumValueOf(CHAT_FORMAT_ENUM, "RESET", 21);
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
-            PLAYER_CONNECTION = lookup.findGetter(entityPlayerClass, "playerConnection", playerConnectionClass);
+            PLAYER_CONNECTION = lookup.unreflectGetter(playerConnectionField);
             SEND_PACKET = lookup.findVirtual(playerConnectionClass, "sendPacket", MethodType.methodType(void.class, packetClass));
-            PACKET_SB_OBJ = lookup.findConstructor(packetSbObjClass, voidType);
-            PACKET_SB_DISPLAY_OBJ = lookup.findConstructor(packetSbDisplayObjClass, voidType);
-            PACKET_SB_SCORE = lookup.findConstructor(packetSbScoreClass, voidType);
-            PACKET_SB_TEAM = lookup.findConstructor(packetSbTeamClass, voidType);
+            PACKET_SB_OBJ = FastReflection.findPacketConstructor(packetSbObjClass, lookup);
+            PACKET_SB_DISPLAY_OBJ = FastReflection.findPacketConstructor(packetSbDisplayObjClass, lookup);
+            PACKET_SB_SCORE = FastReflection.findPacketConstructor(packetSbScoreClass, lookup);
+            PACKET_SB_TEAM = FastReflection.findPacketConstructor(packetSbTeamClass, lookup);
+            PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass == null ? null : FastReflection.findPacketConstructor(sbTeamClass, lookup);
 
-            for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass)) {
-                List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
-                fields.forEach(field -> field.setAccessible(true));
+            for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
+                if (clazz == null) {
+                    continue;
+                }
+                Field[] fields = Arrays.stream(clazz.getDeclaredFields())
+                        .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                        .toArray(Field[]::new);
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                }
                 PACKETS.put(clazz, fields);
             }
 
@@ -115,11 +139,11 @@ public class FastBoard {
                 String enumSbActionClass = VersionType.V1_13.isHigherOrEqual()
                         ? "ScoreboardServer$Action"
                         : "PacketPlayOutScoreboardScore$EnumScoreboardAction";
-                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("IScoreboardCriteria$EnumScoreboardHealthDisplay");
-                ENUM_SB_ACTION = FastReflection.nmsClass(enumSbActionClass);
-                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
-                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE");
-                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE");
+                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay");
+                ENUM_SB_ACTION = FastReflection.nmsClass("server", enumSbActionClass);
+                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER", 0);
+                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE", 0);
+                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE", 1);
             } else {
                 ENUM_SB_HEALTH_DISPLAY = null;
                 ENUM_SB_ACTION = null;
@@ -127,8 +151,8 @@ public class FastBoard {
                 ENUM_SB_ACTION_CHANGE = null;
                 ENUM_SB_ACTION_REMOVE = null;
             }
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
+        } catch (Throwable t) {
+            throw new ExceptionInInitializerError(t);
         }
     }
 
@@ -520,10 +544,22 @@ public class FastBoard {
                 suffix = (suffix != null) ? suffix.substring(0, maxLength) : null;
             }
 
-            setComponentField(packet, prefix, 2); // Prefix
-            setComponentField(packet, suffix == null ? "" : suffix, 3); // Suffix
-            setField(packet, String.class, "always", 4); // Visibility for 1.8+
-            setField(packet, String.class, "always", 5); // Collisions for 1.9+
+            if (VersionType.V1_17.isHigherOrEqual()) {
+                Object team = PACKET_SB_SERIALIZABLE_TEAM.invoke();
+                // Since the packet is initialized with null values, we need to change more things.
+                setComponentField(team, "", 0); // Display name
+                setField(team, CHAT_FORMAT_ENUM, RESET_FORMATTING); // Color
+                setComponentField(team, prefix, 1); // Prefix
+                setComponentField(team, suffix == null ? "" : suffix, 2); // Suffix
+                setField(team, String.class, "always", 0); // Visibility
+                setField(team, String.class, "always", 1); // Collisions
+                setField(packet, Optional.class, Optional.of(team));
+            } else {
+                setComponentField(packet, prefix, 2); // Prefix
+                setComponentField(packet, suffix == null ? "" : suffix, 3); // Suffix
+                setField(packet, String.class, "always", 4); // Visibility for 1.8+
+                setField(packet, String.class, "always", 5); // Collisions for 1.9+
+            }
 
             if (mode == TeamMode.CREATE) {
                 setField(packet, Collection.class, Collections.singletonList(getColorCode(score))); // Players in the team
@@ -559,7 +595,7 @@ public class FastBoard {
     }
 
     private void setComponentField(Object packet, String value, int count) throws Throwable {
-        if (VERSION_TYPE != VersionType.V1_13) {
+        if (!VersionType.V1_13.isHigherOrEqual()) {
             setField(packet, String.class, value, count);
             return;
         }
@@ -567,7 +603,7 @@ public class FastBoard {
         int i = 0;
         for (Field field : PACKETS.get(packet.getClass())) {
             if ((field.getType() == String.class || field.getType() == CHAT_COMPONENT_CLASS) && count == i++) {
-                field.set(packet, Array.get(MESSAGE_FROM_STRING.invoke(value), 0));
+                field.set(packet, value.isEmpty() ? EMPTY_MESSAGE : Array.get(MESSAGE_FROM_STRING.invoke(value), 0));
             }
         }
     }
@@ -585,7 +621,7 @@ public class FastBoard {
     }
 
     enum VersionType {
-        V1_7, V1_8, V1_13;
+        V1_7, V1_8, V1_13, V1_17;
 
         public boolean isHigherOrEqual() {
             return VERSION_TYPE.ordinal() >= ordinal();

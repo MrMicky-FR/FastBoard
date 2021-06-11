@@ -23,9 +23,17 @@
  */
 package fr.mrmicky.fastboard;
 
+import com.google.common.base.Suppliers;
 import org.bukkit.Bukkit;
+import sun.misc.Unsafe;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Small reflection utility class to use CraftBukkit and NMS.
@@ -34,25 +42,47 @@ import java.util.Optional;
  */
 public final class FastReflection {
 
+    public static final String NM_PACKAGE = "net.minecraft";
     public static final String OBC_PACKAGE = "org.bukkit.craftbukkit";
-    public static final String NMS_PACKAGE = "net.minecraft.server";
+    public static final String NMS_PACKAGE = NM_PACKAGE + ".server";
 
     public static final String VERSION = Bukkit.getServer().getClass().getPackage().getName().substring(OBC_PACKAGE.length() + 1);
+
+    private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
+    private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
+
+    private static final Supplier<Unsafe> UNSAFE = Suppliers.memoize(() -> {
+        try {
+            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            return (Unsafe) f.get(null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    });
 
     private FastReflection() {
         throw new UnsupportedOperationException();
     }
 
-    public static String nmsClassName(String className) {
+    public static boolean isRepackaged() {
+        return NMS_REPACKAGED;
+    }
+
+    public static String nmsClassName(String post1_17package, String className) {
+        if (NMS_REPACKAGED) {
+            String classPackage = post1_17package == null ? NM_PACKAGE : NM_PACKAGE + '.' + post1_17package;
+            return classPackage + '.' + className;
+        }
         return NMS_PACKAGE + '.' + VERSION + '.' + className;
     }
 
-    public static Class<?> nmsClass(String className) throws ClassNotFoundException {
-        return Class.forName(nmsClassName(className));
+    public static Class<?> nmsClass(String post1_17package, String className) throws ClassNotFoundException {
+        return Class.forName(nmsClassName(post1_17package, className));
     }
 
-    public static Optional<Class<?>> nmsOptionalClass(String className) {
-        return optionalClass(nmsClassName(className));
+    public static Optional<Class<?>> nmsOptionalClass(String post1_17package, String className) {
+        return optionalClass(nmsClassName(post1_17package, className));
     }
 
     public static String obcClassName(String className) {
@@ -77,5 +107,41 @@ public final class FastReflection {
 
     public static Object enumValueOf(Class<?> enumClass, String enumName) {
         return Enum.valueOf(enumClass.asSubclass(Enum.class), enumName);
+    }
+
+    public static Object enumValueOf(Class<?> enumClass, String enumName, int fallbackOrdinal) {
+        try {
+            return enumValueOf(enumClass, enumName);
+        } catch (IllegalArgumentException e) {
+            Object[] constants = enumClass.getEnumConstants();
+            if (constants.length > fallbackOrdinal) {
+                return constants[fallbackOrdinal];
+            }
+            throw e;
+        }
+    }
+
+    static Class<?> innerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) throws ClassNotFoundException {
+        for (Class<?> innerClass : parentClass.getDeclaredClasses()) {
+            if (classPredicate.test(innerClass)) {
+                return innerClass;
+            }
+        }
+        throw new ClassNotFoundException("No class in " + parentClass.getCanonicalName() + " matches the predicate.");
+    }
+
+    public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) {
+        try {
+            MethodHandle constructor = lookup.findConstructor(packetClass, VOID_METHOD_TYPE);
+            return constructor::invoke;
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            Unsafe unsafe = UNSAFE.get();
+            return () -> unsafe.allocateInstance(packetClass);
+        }
+    }
+
+    @FunctionalInterface
+    interface PacketConstructor {
+        Object invoke() throws Throwable;
     }
 }
