@@ -45,7 +45,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Lightweight packet-based scoreboard API for Bukkit plugins.
- * It can be used safely in an async thread as everything is at packet level.
+ * It can be safely used asynchronously as everything is at packet level.
  * <p>
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
@@ -55,6 +55,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class FastBoard {
 
     private static final Map<Class<?>, Field[]> PACKETS = new HashMap<>(8);
+    private static final String[] COLOR_CODES = Arrays.stream(ChatColor.values())
+            .map(Object::toString)
+            .toArray(String[]::new);
     private static final VersionType VERSION_TYPE;
     // Packets and components
     private static final Class<?> CHAT_COMPONENT_CLASS;
@@ -433,13 +436,9 @@ public class FastBoard {
             throw new IllegalArgumentException("Line number must be under " + this.lines.size());
         }
 
-        if (checkMax && line >= ChatColor.values().length - 1) {
+        if (checkMax && line >= COLOR_CODES.length - 1) {
             throw new IllegalArgumentException("Line number is too high: " + this.lines.size());
         }
-    }
-
-    private String getColorCode(int score) {
-        return ChatColor.values()[score].toString();
     }
 
     private int getScoreByLine(int line) {
@@ -485,7 +484,7 @@ public class FastBoard {
     private void sendScorePacket(int score, ScoreboardAction action) throws Throwable {
         Object packet = PACKET_SB_SCORE.invoke();
 
-        setField(packet, String.class, getColorCode(score), 0); // Player Name
+        setField(packet, String.class, COLOR_CODES[score], 0); // Player Name
 
         if (VersionType.V1_8.isHigherOrEqual()) {
             setField(packet, ENUM_SB_ACTION, action == ScoreboardAction.REMOVE ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE);
@@ -518,7 +517,7 @@ public class FastBoard {
             String suffix = null;
 
             if (line == null || line.isEmpty()) {
-                prefix = getColorCode(score) + ChatColor.RESET;
+                prefix = COLOR_CODES[score] + ChatColor.RESET;
             } else if (line.length() <= maxLength) {
                 prefix = line;
             } else {
@@ -562,7 +561,7 @@ public class FastBoard {
             }
 
             if (mode == TeamMode.CREATE) {
-                setField(packet, Collection.class, Collections.singletonList(getColorCode(score))); // Players in the team
+                setField(packet, Collection.class, Collections.singletonList(COLOR_CODES[score])); // Players in the team
             }
         }
 

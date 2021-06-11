@@ -1,22 +1,22 @@
 # FastBoard
 [![Java CI](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml/badge.svg)](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml)
-[![Sonatype Snapshots](https://img.shields.io/nexus/s/fr.mrmicky/fastboard?label=sonatype%20snapshots&server=https%3A%2F%2Fs01.oss.sonatype.org)](pom.xml)
-[![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/fr.mrmicky/fastboard?label=Sonatype%20snapshots&server=https%3A%2F%2Fs01.oss.sonatype.org)](pom.xml)
+[![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 support.
+Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.17 support.
 
 ⚠️ To use FastBoard on a 1.8 server, the server must be on 1.8.8.
 
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all versions from 1.7.10 to 1.16
-* Very small (around 550 lines of code with the JavaDoc) and no dependencies
+* Works with all versions from 1.7.10 to 1.17
+* Very small (around 600 lines of code with the JavaDoc) and no dependencies
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all the lines
 * Everything is at packet level, so it works with other plugins using scoreboard and/or teams
-* Can be used in an async thread
-* Supports up to 30 characters per line on 1.7-1.12
+* Can be used asynchronously
+* Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
 * Supports hex colors on 1.16 and higher
 
@@ -50,8 +50,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 
         </plugin>
     </plugins>
 </build>
-```
-```xml
+
 <dependencies>
     <dependency>
         <groupId>fr.mrmicky</groupId>
@@ -59,8 +58,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 
         <version>1.2.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
-```
-```xml
+
 <repositories>
     <repository>
         <id>sonatype-oss</id>
@@ -75,18 +73,15 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.16 
 plugins {
     id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
-```
-```groovy
+
 repositories {
     maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
 }
-```
-```groovy
+
 dependencies {
     implementation 'fr.mrmicky:fastboard:1.2.0-SNAPSHOT'
 }
-```
-```groovy
+
 shadowJar {
     // Replace 'com.yourpackage' with the package of your plugin 
     relocate 'fr.mrmicky.fastboard', 'com.yourpackage.fastboard'
@@ -95,13 +90,13 @@ shadowJar {
 
 ### Manual
 
-Copy `FastBoard.java` and `FastReflection.java` in your plugin
+Copy `FastBoard.java` and `FastReflection.java` in your plugin.
 
 ## Usage
 
 ### Creating a scoreboard
 
-Just create a new `FastBoard` and update the title and the lines
+Just create a new `FastBoard` and update the title and the lines:
 
 ```java
 FastBoard board = new FastBoard(player);
@@ -113,7 +108,7 @@ board.updateTitle(ChatColor.GOLD + "FastBoard");
 board.updateLines(
         "", // Empty line
         "One line",
-        "", // Empty line
+        "",
         "Second line"
 );
 ```

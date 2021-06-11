@@ -23,17 +23,15 @@
  */
 package fr.mrmicky.fastboard;
 
-import com.google.common.base.Suppliers;
 import org.bukkit.Bukkit;
-import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Small reflection utility class to use CraftBukkit and NMS.
@@ -42,7 +40,7 @@ import java.util.function.Supplier;
  */
 public final class FastReflection {
 
-    public static final String NM_PACKAGE = "net.minecraft";
+    private static final String NM_PACKAGE = "net.minecraft";
     public static final String OBC_PACKAGE = "org.bukkit.craftbukkit";
     public static final String NMS_PACKAGE = NM_PACKAGE + ".server";
 
@@ -51,15 +49,7 @@ public final class FastReflection {
     private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
     private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
 
-    private static final Supplier<Unsafe> UNSAFE = Suppliers.memoize(() -> {
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            return (Unsafe) f.get(null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    });
+    private static volatile Object theUnsafe;
 
     private FastReflection() {
         throw new UnsupportedOperationException();
@@ -130,14 +120,27 @@ public final class FastReflection {
         throw new ClassNotFoundException("No class in " + parentClass.getCanonicalName() + " matches the predicate.");
     }
 
-    public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) {
+    public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) throws Exception {
         try {
             MethodHandle constructor = lookup.findConstructor(packetClass, VOID_METHOD_TYPE);
             return constructor::invoke;
         } catch (NoSuchMethodException | IllegalAccessException e) {
-            Unsafe unsafe = UNSAFE.get();
-            return () -> unsafe.allocateInstance(packetClass);
+            // try below with Unsafe
         }
+
+        if (theUnsafe == null) {
+            synchronized (FastReflection.class) {
+                if (theUnsafe == null) {
+                    Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+                    Field theUnsafeField = unsafeClass.getDeclaredField("theUnsafe");
+                    theUnsafeField.setAccessible(true);
+                    theUnsafe = theUnsafeField.get(null);
+                }
+            }
+        }
+
+        Method allocateMethod = theUnsafe.getClass().getMethod("allocateInstance", Class.class);
+        return () -> allocateMethod.invoke(theUnsafe, packetClass);
     }
 
     @FunctionalInterface
