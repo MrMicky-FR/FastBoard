@@ -112,7 +112,9 @@ public class FastBoard {
             MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
             CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
             CHAT_FORMAT_ENUM = chatFormatEnum;
-            EMPTY_MESSAGE = FastReflection.nmsClass("network.chat", "ChatComponentText").getFields()[0].get(null);
+            EMPTY_MESSAGE = VersionType.V1_17.isHigherOrEqual() ?
+                    FastReflection.nmsClass("network.chat", "ChatComponentText").getFields()[0].get(null)
+                    : null;
             RESET_FORMATTING = FastReflection.enumValueOf(chatFormatEnum, "RESET", 21);
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
             PLAYER_CONNECTION = lookup.unreflectGetter(
