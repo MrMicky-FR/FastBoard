@@ -48,7 +48,8 @@ public final class FastReflection {
 
     public static final String VERSION = Bukkit.getServer().getClass().getPackage().getName().substring(OBC_PACKAGE.length() + 1);
 
-    private static final boolean NMS_REPACKAGE = !nmsOptionalClass("Packet").isPresent();
+    private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
+    private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
 
     private static final Supplier<Unsafe> UNSAFE = Suppliers.memoize(() -> {
         try {
@@ -65,31 +66,19 @@ public final class FastReflection {
     }
 
     public static boolean isRepackaged() {
-        return NMS_REPACKAGE;
-    }
-
-    public static String nmsClassName(String className) {
-        return NMS_PACKAGE + '.' + VERSION + '.' + className;
+        return NMS_REPACKAGED;
     }
 
     public static String nmsClassName(String post1_17package, String className) {
-        if (NMS_REPACKAGE) {
+        if (NMS_REPACKAGED) {
             String classPackage = post1_17package == null ? NM_PACKAGE : NM_PACKAGE + '.' + post1_17package;
             return classPackage + '.' + className;
         }
-        return nmsClassName(className);
-    }
-
-    public static Class<?> nmsClass(String className) throws ClassNotFoundException {
-        return Class.forName(nmsClassName(className));
+        return NMS_PACKAGE + '.' + VERSION + '.' + className;
     }
 
     public static Class<?> nmsClass(String post1_17package, String className) throws ClassNotFoundException {
         return Class.forName(nmsClassName(post1_17package, className));
-    }
-
-    public static Optional<Class<?>> nmsOptionalClass(String className) {
-        return optionalClass(nmsClassName(className));
     }
 
     public static Optional<Class<?>> nmsOptionalClass(String post1_17package, String className) {
@@ -117,22 +106,22 @@ public final class FastReflection {
     }
 
     public static Object enumValueOf(Class<?> enumClass, String enumName) {
-        return enumValueOf(enumClass, enumName, Integer.MAX_VALUE);
+        return Enum.valueOf(enumClass.asSubclass(Enum.class), enumName);
     }
 
-    public static Object enumValueOf(Class<?> enumClass, String enumName, int enumFallbackOrdinal) {
+    public static Object enumValueOf(Class<?> enumClass, String enumName, int fallbackOrdinal) {
         try {
-            return Enum.valueOf(enumClass.asSubclass(Enum.class), enumName);
+            return enumValueOf(enumClass, enumName);
         } catch (IllegalArgumentException e) {
             Object[] constants = enumClass.getEnumConstants();
-            if (constants.length > enumFallbackOrdinal) {
-                return constants[enumFallbackOrdinal];
+            if (constants.length > fallbackOrdinal) {
+                return constants[fallbackOrdinal];
             }
+            throw e;
         }
-        throw new IllegalArgumentException("No enum constant " + enumName + " in " + enumClass.getCanonicalName() + '.');
     }
 
-    public static Class<?> innerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) throws ClassNotFoundException {
+    static Class<?> innerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) throws ClassNotFoundException {
         for (Class<?> innerClass : parentClass.getDeclaredClasses()) {
             if (classPredicate.test(innerClass)) {
                 return innerClass;
@@ -141,17 +130,9 @@ public final class FastReflection {
         throw new ClassNotFoundException("No class in " + parentClass.getCanonicalName() + " matches the predicate.");
     }
 
-    public static Optional<Class<?>> optionalInnerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) {
+    public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) {
         try {
-            return Optional.of(innerClass(parentClass, classPredicate));
-        } catch (ClassNotFoundException e) {
-            return Optional.empty();
-        }
-    }
-
-    public static PacketInvoker findPacketInvoker(Class<?> packetClass, MethodHandles.Lookup lookup, MethodType constructorType) throws ReflectiveOperationException {
-        try {
-            MethodHandle constructor = lookup.findConstructor(packetClass, constructorType);
+            MethodHandle constructor = lookup.findConstructor(packetClass, VOID_METHOD_TYPE);
             return constructor::invoke;
         } catch (NoSuchMethodException | IllegalAccessException e) {
             Unsafe unsafe = UNSAFE.get();
@@ -160,8 +141,7 @@ public final class FastReflection {
     }
 
     @FunctionalInterface
-    interface PacketInvoker {
-
+    interface PacketConstructor {
         Object invoke() throws Throwable;
     }
 }
