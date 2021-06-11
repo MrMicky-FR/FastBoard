@@ -23,6 +23,7 @@
  */
 package fr.mrmicky.fastboard;
 
+import fr.mrmicky.fastboard.FastReflection.PacketInvoker;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -61,10 +62,10 @@ public class FastBoard {
     private static final MethodHandle SEND_PACKET;
     private static final MethodHandle PLAYER_GET_HANDLE;
     // Scoreboard packets
-    private static final MethodHandle PACKET_SB_OBJ;
-    private static final MethodHandle PACKET_SB_DISPLAY_OBJ;
-    private static final MethodHandle PACKET_SB_SCORE;
-    private static final MethodHandle PACKET_SB_TEAM;
+    private static final PacketInvoker PACKET_SB_OBJ;
+    private static final PacketInvoker PACKET_SB_DISPLAY_OBJ;
+    private static final PacketInvoker PACKET_SB_SCORE;
+    private static final PacketInvoker PACKET_SB_TEAM;
     // Scoreboard enums
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
     private static final Class<?> ENUM_SB_ACTION;
@@ -87,23 +88,28 @@ public class FastBoard {
 
             Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
             Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
-            Class<?> entityPlayerClass = FastReflection.nmsClass("EntityPlayer");
-            Class<?> playerConnectionClass = FastReflection.nmsClass("PlayerConnection");
-            Class<?> packetClass = FastReflection.nmsClass("Packet");
-            Class<?> packetSbObjClass = FastReflection.nmsClass("PacketPlayOutScoreboardObjective");
-            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass("PacketPlayOutScoreboardDisplayObjective");
-            Class<?> packetSbScoreClass = FastReflection.nmsClass("PacketPlayOutScoreboardScore");
-            Class<?> packetSbTeamClass = FastReflection.nmsClass("PacketPlayOutScoreboardTeam");
+            Class<?> entityPlayerClass = FastReflection.nmsClass("server.level", "EntityPlayer");
+            Class<?> playerConnectionClass = FastReflection.nmsClass("server.network", "PlayerConnection");
+            Class<?> packetClass = FastReflection.nmsClass("network.protocol", "Packet");
+            String gameProtocolPackage = "network.protocol.game";
+            Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective");
+            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective");
+            Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore");
+            Class<?> packetSbTeamClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam");
 
             MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
-            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("IChatBaseComponent");
+            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
-            PLAYER_CONNECTION = lookup.findGetter(entityPlayerClass, "playerConnection", playerConnectionClass);
+            PLAYER_CONNECTION = lookup.unreflectGetter(
+                    Arrays.stream(entityPlayerClass.getFields())
+                    .filter(field -> field.getType().isAssignableFrom(playerConnectionClass))
+                    .findFirst().orElseThrow(NoSuchFieldException::new)
+            );
             SEND_PACKET = lookup.findVirtual(playerConnectionClass, "sendPacket", MethodType.methodType(void.class, packetClass));
-            PACKET_SB_OBJ = lookup.findConstructor(packetSbObjClass, voidType);
-            PACKET_SB_DISPLAY_OBJ = lookup.findConstructor(packetSbDisplayObjClass, voidType);
-            PACKET_SB_SCORE = lookup.findConstructor(packetSbScoreClass, voidType);
-            PACKET_SB_TEAM = lookup.findConstructor(packetSbTeamClass, voidType);
+            PACKET_SB_OBJ = FastReflection.findPacketInvoker(packetSbObjClass, lookup, voidType);
+            PACKET_SB_DISPLAY_OBJ = FastReflection.findPacketInvoker(packetSbDisplayObjClass, lookup, voidType);
+            PACKET_SB_SCORE = FastReflection.findPacketInvoker(packetSbScoreClass, lookup, voidType);
+            PACKET_SB_TEAM = FastReflection.findPacketInvoker(packetSbTeamClass, lookup, voidType);
 
             for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass)) {
                 List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
@@ -117,9 +123,9 @@ public class FastBoard {
                         : "PacketPlayOutScoreboardScore$EnumScoreboardAction";
                 ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("IScoreboardCriteria$EnumScoreboardHealthDisplay");
                 ENUM_SB_ACTION = FastReflection.nmsClass(enumSbActionClass);
-                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER");
-                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE");
-                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE");
+                ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER", 0);
+                ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE", 0);
+                ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE", 1);
             } else {
                 ENUM_SB_HEALTH_DISPLAY = null;
                 ENUM_SB_ACTION = null;
