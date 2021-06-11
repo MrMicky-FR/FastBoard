@@ -32,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -63,13 +64,18 @@ public final class FastReflection {
         throw new UnsupportedOperationException();
     }
 
+    public static boolean isRepackaged() {
+        return NMS_REPACKAGE;
+    }
+
     public static String nmsClassName(String className) {
         return NMS_PACKAGE + '.' + VERSION + '.' + className;
     }
 
     public static String nmsClassName(String post1_17package, String className) {
         if (NMS_REPACKAGE) {
-            return NM_PACKAGE + '.' + post1_17package + '.' + className;
+            String classPackage = post1_17package == null ? NM_PACKAGE : NM_PACKAGE + '.' + post1_17package;
+            return classPackage + '.' + className;
         }
         return nmsClassName(className);
     }
@@ -124,6 +130,23 @@ public final class FastReflection {
             }
         }
         throw new IllegalArgumentException("No enum constant " + enumName + " in " + enumClass.getCanonicalName() + '.');
+    }
+
+    public static Class<?> innerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) throws ClassNotFoundException {
+        for (Class<?> innerClass : parentClass.getDeclaredClasses()) {
+            if (classPredicate.test(innerClass)) {
+                return innerClass;
+            }
+        }
+        throw new ClassNotFoundException("No class in " + parentClass.getCanonicalName() + " matches the predicate.");
+    }
+
+    public static Optional<Class<?>> optionalInnerClass(Class<?> parentClass, Predicate<Class<?>> classPredicate) {
+        try {
+            return Optional.of(innerClass(parentClass, classPredicate));
+        } catch (ClassNotFoundException e) {
+            return Optional.empty();
+        }
     }
 
     public static PacketInvoker findPacketInvoker(Class<?> packetClass, MethodHandles.Lookup lookup, MethodType constructorType) throws ReflectiveOperationException {
