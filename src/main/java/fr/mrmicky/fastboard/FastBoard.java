@@ -50,7 +50,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 1.2.0-SNAPSHOT
+ * @version 1.2.0
  */
 public class FastBoard {
 

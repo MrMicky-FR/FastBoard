@@ -1,6 +1,6 @@
 # FastBoard
 [![Java CI](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml/badge.svg)](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml)
-[![Sonatype Snapshots](https://img.shields.io/nexus/s/fr.mrmicky/fastboard?label=Sonatype%20snapshots&server=https%3A%2F%2Fs01.oss.sonatype.org)](pom.xml)
+[![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22fr.mrmicky%22%20AND%20a:%22fastboard%22)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
 Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.17 support.
@@ -55,16 +55,9 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.17 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.2.0</version>
     </dependency>
 </dependencies>
-
-<repositories>
-    <repository>
-        <id>sonatype-oss</id>
-        <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-    </repository>
-</repositories>
 ```
 
 ### Gradle
@@ -75,11 +68,11 @@ plugins {
 }
 
 repositories {
-    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+    mavenCentral()
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.0-SNAPSHOT'
+    implementation 'fr.mrmicky:fastboard:1.2.0'
 }
 
 shadowJar {
