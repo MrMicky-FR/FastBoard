@@ -306,7 +306,6 @@ public class FastBoard {
      * Update the lines of the scoreboard
      *
      * @param lines the new scoreboard lines
-     * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public synchronized void updateLines(Collection<String> lines) {
@@ -317,7 +316,7 @@ public class FastBoard {
             int lineCount = 0;
             for (String s : lines) {
                 if (s != null && s.length() > 30) {
-                    throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
+                    s = s.substring(0, 30);
                 }
                 lineCount++;
             }
