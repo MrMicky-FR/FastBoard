@@ -29,7 +29,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -139,7 +138,8 @@ public final class FastReflection {
             }
         }
 
-        Method allocateMethod = theUnsafe.getClass().getMethod("allocateInstance", Class.class);
+        MethodType allocateMethodType = MethodType.methodType(Object.class, Class.class);
+        MethodHandle allocateMethod = lookup.findVirtual(theUnsafe.getClass(), "allocateInstance", allocateMethodType);
         return () -> allocateMethod.invoke(theUnsafe, packetClass);
     }
 

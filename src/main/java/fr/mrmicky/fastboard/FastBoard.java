@@ -437,7 +437,7 @@ public class FastBoard {
         }
 
         if (checkMax && line >= COLOR_CODES.length - 1) {
-            throw new IllegalArgumentException("Line number is too high: " + this.lines.size());
+            throw new IllegalArgumentException("Line number is too high: " + line);
         }
     }
 
