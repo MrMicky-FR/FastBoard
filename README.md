@@ -4,14 +4,14 @@
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22fr.mrmicky%22%20AND%20a:%22fastboard%22)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.17 support.
+Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 support.
 
 ⚠️ To use FastBoard on a 1.8 server, the server must be on 1.8.8.
 
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all versions from 1.7.10 to 1.17
+* Works with all versions from 1.7.10 to 1.18
 * Very small (around 600 lines of code with the JavaDoc) and no dependencies
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all the lines
@@ -56,7 +56,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.17 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.1</version>
     </dependency>
 </dependencies>
 ```
@@ -73,7 +73,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.0'
+    implementation 'fr.mrmicky:fastboard:1.2.1'
 }
 
 shadowJar {

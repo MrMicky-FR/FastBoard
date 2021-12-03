@@ -51,7 +51,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 1.2.0
+ * @version 1.2.1
  */
 public class FastBoard {
 
@@ -111,9 +111,8 @@ public class FastBoard {
             Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
                     .filter(field -> field.getType().isAssignableFrom(playerConnectionClass))
                     .findFirst().orElseThrow(NoSuchFieldException::new);
-            Class<?>[] sendPacketParameters = new Class[]{packetClass};
             Method sendPacketMethod = Arrays.stream(playerConnectionClass.getMethods())
-                    .filter(method -> Arrays.equals(method.getParameterTypes(), sendPacketParameters))
+                    .filter(m -> m.getParameterCount() == 1 && m.getParameterTypes()[0] == packetClass)
                     .findFirst().orElseThrow(NoSuchMethodException::new);
 
             MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));

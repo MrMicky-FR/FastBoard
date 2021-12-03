@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [8, 11]
+        java-version: [8, 11, 17]
 
     steps:
       - name: Checkout repository
@@ -21,7 +21,7 @@ jobs:
       - name: Setup JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
 
       - name: Build
