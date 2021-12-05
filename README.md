@@ -68,20 +68,20 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 
 ```groovy
 plugins {
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
+  id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
 repositories {
-    mavenCentral()
+  mavenCentral()
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.1'
+  implementation 'fr.mrmicky:fastboard:1.2.1'
 }
 
 shadowJar {
-    // Replace 'com.yourpackage' with the package of your plugin 
-    relocate 'fr.mrmicky.fastboard', 'com.yourpackage.fastboard'
+  // Replace 'com.yourpackage' with the package of your plugin 
+  relocate 'fr.mrmicky.fastboard', 'com.yourpackage.fastboard'
 }
 ```
 
