@@ -299,7 +299,7 @@ public final class FastBoardRegistry {
   }
 
   /**
-   * a class that represents entrypoint of the server to register/unregister the fast board for each player
+   * a class that represents entrypoint of the server to register/unregister the fast board for each player.
    */
   private static final class Entrypoint implements Listener {
 
