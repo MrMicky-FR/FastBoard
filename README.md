@@ -29,38 +29,38 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 
 ```xml
 <build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.2.4</version>
-            <executions>
-                <execution>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>shade</goal>
-                    </goals>
-                </execution>
-            </executions>
-            <configuration>
-                <relocations>
-                    <relocation>
-                        <pattern>fr.mrmicky.fastboard</pattern>
-                        <!-- Replace 'com.yourpackage' with the package of your plugin ! -->
-                        <shadedPattern>com.yourpackage.fastboard</shadedPattern>
-                    </relocation>
-                </relocations>
-            </configuration>
-        </plugin>
-    </plugins>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.2.4</version>
+      <executions>
+        <execution>
+          <phase>package</phase>
+          <goals>
+            <goal>shade</goal>
+          </goals>
+        </execution>
+      </executions>
+      <configuration>
+        <relocations>
+          <relocation>
+            <pattern>fr.mrmicky.fastboard</pattern>
+            <!-- Replace 'com.yourpackage' with the package of your plugin ! -->
+            <shadedPattern>com.yourpackage.fastboard</shadedPattern>
+          </relocation>
+        </relocations>
+      </configuration>
+    </plugin>
+  </plugins>
 </build>
 
 <dependencies>
-<dependency>
+  <dependency>
     <groupId>fr.mrmicky</groupId>
     <artifactId>fastboard</artifactId>
     <version>1.2.1</version>
-</dependency>
+  </dependency>
 </dependencies>
 ```
 
