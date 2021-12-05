@@ -28,7 +28,6 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 ### Maven
 
 ```xml
-
 <build>
     <plugins>
         <plugin>
