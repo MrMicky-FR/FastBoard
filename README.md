@@ -170,7 +170,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
   private void updateBoard(FastBoard board) {
     board.updateLines(
       "",
-      "Players: " + getServer().getOnlinePlayers().size(),
+      "Players: " + this.getServer().getOnlinePlayers().size(),
       "",
       "Kills: " + board.getPlayer().getStatistic(Statistic.PLAYER_KILLS),
       ""
