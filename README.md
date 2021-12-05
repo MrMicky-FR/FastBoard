@@ -1,4 +1,5 @@
 # FastBoard
+
 [![Java CI](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml/badge.svg)](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml)
 [![Language grade](https://img.shields.io/lgtm/grade/java/github/MrMicky-FR/FastBoard.svg?logo=lgtm&logoWidth=18&label=code%20quality)](https://lgtm.com/projects/g/MrMicky-FR/FastBoard/context:java)
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22fr.mrmicky%22%20AND%20a:%22fastboard%22)
@@ -14,7 +15,8 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 * Works with all versions from 1.7.10 to 1.18
 * Very small (around 600 lines of code with the JavaDoc) and no dependencies
 * Easy to use
-* Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all the lines
+* Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all
+  the lines
 * Everything is at packet level, so it works with other plugins using scoreboard and/or teams
 * Can be used asynchronously
 * Supports up to 30 characters per line on 1.12.2 and below
@@ -24,7 +26,9 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 ## Installation
 
 ### Maven
+
 ```xml
+
 <build>
     <plugins>
         <plugin>
@@ -53,11 +57,11 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
 </build>
 
 <dependencies>
-    <dependency>
-        <groupId>fr.mrmicky</groupId>
-        <artifactId>fastboard</artifactId>
-        <version>1.2.1</version>
-    </dependency>
+<dependency>
+    <groupId>fr.mrmicky</groupId>
+    <artifactId>fastboard</artifactId>
+    <version>1.2.1</version>
+</dependency>
 </dependencies>
 ```
 
@@ -84,7 +88,7 @@ shadowJar {
 
 ### Manual
 
-Copy `FastBoard.java` and `FastReflection.java` in your plugin.
+Copy `FastBoard.java`, `FastReflection.java` and `FastBoardRegistry.java` in your plugin.
 
 ## Usage
 
@@ -93,21 +97,24 @@ Copy `FastBoard.java` and `FastReflection.java` in your plugin.
 Just create a new `FastBoard` and update the title and the lines:
 
 ```java
-FastBoard board = new FastBoard(player);
-
-// Set the title
-board.updateTitle(ChatColor.GOLD + "FastBoard");
-
-// Change the lines
-board.updateLines(
-        "", // Empty line
-        "One line",
-        "",
-        "Second line"
-);
+final class Test {
+  void test() {
+    FastBoard board = new FastBoard(player);
+    // Set the title
+    board.updateTitle(ChatColor.GOLD + "FastBoard");
+    // Change the lines
+    board.updateLines(
+      "", // Empty line
+      "One line",
+      "",
+      "Second line"
+    );
+  }
+}
 ```
 
 ### Example-1
+#### Manual Registry
 
 Just a small example plugin with a scoreboard that refreshes every second:
 
@@ -115,6 +122,19 @@ Just a small example plugin with a scoreboard that refreshes every second:
 package fr.mrmicky.fastboard.example;
 
 import fr.mrmicky.fastboard.FastBoardRegistry;
+import fr.mrmicky.fastboard.FastBoard;
+import org.bukkit.ChatColor;
+import org.bukkit.Statistic;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public final class ExamplePlugin extends JavaPlugin implements Listener {
 
@@ -166,6 +186,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 ```
 
 ### Example-2
+#### Auto Registry
 
 Just a small example plugin with a scoreboard that refreshes every second:
 
