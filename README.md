@@ -114,6 +114,7 @@ final class Test {
 ```
 
 ### Example-1
+
 #### Manual Registry
 
 Just a small example plugin with a scoreboard that refreshes every second:
@@ -124,6 +125,7 @@ package fr.mrmicky.fastboard.example;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -179,6 +181,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 ```
 
 ### Example-2
+
 #### Auto Registry
 
 Just a small example plugin with a scoreboard that refreshes every second:
@@ -194,7 +197,9 @@ import fr.mrmicky.fastboard.FastBoardRegistry;
 
 public final class ExamplePlugin extends JavaPlugin implements Listener {
 
-  private final FastBoardRegistry registry = new FastBoardRegistry(this, 0L, 20L)
+  private final FastBoardRegistry registry = new FastBoardRegistry(this)
+    .setPeriodDelay(0L)
+    .setPeriodInterval(20L)
     .setOnRegister(board -> {
       board.updateTitle(ChatColor.RED + "FastBoard");
     })

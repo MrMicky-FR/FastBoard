@@ -18,8 +18,8 @@ import java.util.function.Consumer;
  *   final class ExamplePlugin extends JavaPlugin {
  *
  *     private final FastBoardRegistry registry = new FastBoardRegistry(this)
- *     // private final FastBoardRegistry registry = new FastBoardRegistry(this, // Delay 0L)
- *     // private final FastBoardRegistry registry = new FastBoardRegistry(this, // Delay 0L, // Interval 20L)
+ *       .setPeriodDelay(0L)
+ *       .setPeriodInterval(20L)
  *       .setOnRegister(board -> {
  *         // Runs when a player registers to the fast board registry.
  *         // This calls when the player joins to the server.
@@ -66,19 +66,19 @@ public final class FastBoardRegistry {
   private final Map<UUID, FastBoard> boards = new HashMap<>();
 
   /**
+   * the task.
+   */
+  private final Task task = new Task(this);
+
+  /**
    * the period delay.
    */
-  private final long periodDelay;
+  private long periodDelay;
 
   /**
    * the period interval.
    */
-  private final long periodInterval;
-
-  /**
-   * the task.
-   */
-  private final Task task = new Task(this);
+  private long periodInterval;
 
   /**
    * the on register.
@@ -128,6 +128,46 @@ public final class FastBoardRegistry {
    */
   public FastBoardRegistry(final Plugin plugin) {
     this(plugin, 0L);
+  }
+
+  /**
+   * obtains the period delay.
+   *
+   * @return period delay.
+   */
+  public long getPeriodDelay() {
+    return periodDelay;
+  }
+
+  /**
+   * sets the period delay.
+   *
+   * @param periodDelay the period delay to set.
+   * @return {@code this} for the builder chain.
+   */
+  public FastBoardRegistry setPeriodDelay(final long periodDelay) {
+    this.periodDelay = periodDelay;
+    return this;
+  }
+
+  /**
+   * obtains the period interval.
+   *
+   * @return period interval.
+   */
+  public long getPeriodInterval() {
+    return periodInterval;
+  }
+
+  /**
+   * sets the period interval.
+   *
+   * @param periodInterval the period interval to set.
+   * @return {@code this} for the builder chain.
+   */
+  public FastBoardRegistry setPeriodInterval(final long periodInterval) {
+    this.periodInterval = periodInterval;
+    return this;
   }
 
   /**
