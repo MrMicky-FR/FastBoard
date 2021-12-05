@@ -324,7 +324,7 @@ public final class FastBoardRegistry {
      */
     @EventHandler
     public void onJoin(final PlayerJoinEvent event) {
-      registry.registerUser(event.getPlayer());
+      this.registry.registerUser(event.getPlayer());
     }
 
     /**
@@ -334,7 +334,7 @@ public final class FastBoardRegistry {
      */
     @EventHandler
     public void onQuit(final PlayerQuitEvent event) {
-      registry.unregisterUser(event.getPlayer());
+      this.registry.unregisterUser(event.getPlayer());
     }
   }
 }
