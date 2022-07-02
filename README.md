@@ -4,18 +4,18 @@
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22fr.mrmicky%22%20AND%20a:%22fastboard%22)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 support.
+Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 support.
 
 ⚠️ To use FastBoard on a 1.8 server, the server must be on 1.8.8.
 
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all versions from 1.7.10 to 1.18
+* Works with all versions from 1.7.10 to 1.19
 * Very small (around 600 lines of code with the JavaDoc) and no dependencies
 * Easy to use
-* Dynamic scoreboard size: you don't need to add/remove lines, you can just give a string list (or array) to change all the lines
-* Everything is at packet level, so it works with other plugins using scoreboard and/or teams
+* Dynamic scoreboard size: you don't need to add/remove lines, you can directly give a string list (or array) to change all the lines
+* Everything is at the packet level, so it works with other plugins using scoreboard and/or teams
 * Can be used asynchronously
 * Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
@@ -56,7 +56,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.18 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.0</version>
     </dependency>
 </dependencies>
 ```
@@ -73,7 +73,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.1'
+    implementation 'fr.mrmicky:fastboard:1.2.0'
 }
 
 shadowJar {
@@ -90,7 +90,7 @@ Copy `FastBoard.java` and `FastReflection.java` in your plugin.
 
 ### Creating a scoreboard
 
-Just create a new `FastBoard` and update the title and the lines:
+Simply create a new `FastBoard` and update the title and the lines:
 
 ```java
 FastBoard board = new FastBoard(player);
@@ -109,7 +109,7 @@ board.updateLines(
 
 ### Example
 
-Just a small example plugin with a scoreboard that refreshes every second:
+Small example plugin with a scoreboard that refreshes every second:
 
 ```java
 package fr.mrmicky.fastboard.example;
