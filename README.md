@@ -30,7 +30,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
-            <version>3.2.4</version>
+            <version>3.3.0</version>
             <executions>
                 <execution>
                     <phase>package</phase>
@@ -56,7 +56,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.1</version>
     </dependency>
 </dependencies>
 ```
@@ -65,7 +65,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
 
 ```groovy
 plugins {
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 repositories {
@@ -73,7 +73,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.0'
+    implementation 'fr.mrmicky:fastboard:1.2.1'
 }
 
 shadowJar {
