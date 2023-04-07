@@ -491,7 +491,7 @@ public class FastBoard {
         Object packet = PACKET_SB_TEAM.invoke();
 
         setField(packet, String.class, this.id + ':' + score); // Team name
-        setField(packet, int.class, mode.ordinal(), 1); // Update mode
+        setField(packet, int.class, mode.ordinal(), 0); // Update mode
 
         if (mode == TeamMode.CREATE || mode == TeamMode.UPDATE) {
             Component line = getLineByScore(score);
