@@ -41,7 +41,8 @@ import java.lang.reflect.Method;
 public class FastBoard extends FastBoardBase<Component> {
 
     private static MethodHandle AS_VANILLA;
-    private static final Object EMPTY_COMPONENT;
+    private static Object EMPTY_COMPONENT;
+    private static Object EMPTY_MESSAGE;
     private static boolean CONVERT_TO_LEGACY;
     private static MethodHandle MESSAGE_FROM_STRING;
 
@@ -51,6 +52,7 @@ public class FastBoard extends FastBoardBase<Component> {
             Class<?> paperAdventure = Class.forName("io.papermc.paper.adventure.PaperAdventure");
             Method method = paperAdventure.getDeclaredMethod("asVanilla", Component.class);
             AS_VANILLA = lookup.unreflect(method);
+            EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
             CONVERT_TO_LEGACY = false;
         } catch (Throwable t) {
             AS_VANILLA = null;
@@ -59,15 +61,10 @@ public class FastBoard extends FastBoardBase<Component> {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
                 MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
+                EMPTY_MESSAGE = Array.get(MESSAGE_FROM_STRING.invoke(""), 0);
             } catch (Throwable t2) {
                 throw new ExceptionInInitializerError(t);
             }
-        }
-
-        try {
-            EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
-        } catch (Throwable e) {
-            throw new ExceptionInInitializerError(e);
         }
     }
 
@@ -90,12 +87,19 @@ public class FastBoard extends FastBoardBase<Component> {
 
     @Override
     protected Object toMinecraftComponent(Component component) throws Throwable {
+        // If the component is null, we return an empty component
+        if(component == null) {
+            return EMPTY_MESSAGE;
+        }
 
-        return component != null
-            ? (CONVERT_TO_LEGACY
-                ? Array.get(MESSAGE_FROM_STRING.invoke(LegacyComponentSerializer.legacySection().serialize(component)), 0)
-                : AS_VANILLA.invoke(component))
-            : EMPTY_COMPONENT;
+        // If the server isn't running adventure nativly, we convert the component to legacy text
+        // and then to a minecraft chat component
+        if(CONVERT_TO_LEGACY) {
+            return Array.get(MESSAGE_FROM_STRING.invoke(LegacyComponentSerializer.legacySection().serialize(component)), 0);
+        }
+
+        // Server supports adventure natively
+        return AS_VANILLA.invoke(component);
     }
 
     @Override
