@@ -89,7 +89,7 @@ public class FastBoard extends FastBoardBase<Component> {
     protected Object toMinecraftComponent(Component component) throws Throwable {
         // If the component is null, we return an empty component
         if(component == null) {
-            return EMPTY_MESSAGE;
+            return CONVERT_TO_LEGACY ? EMPTY_MESSAGE : EMPTY_COMPONENT;
         }
 
         // If the server isn't running adventure nativly, we convert the component to legacy text
@@ -99,7 +99,7 @@ public class FastBoard extends FastBoardBase<Component> {
         }
 
         // Server supports adventure natively
-        return AS_VANILLA.invoke(component);
+        return AS_VANILLA.invoke(component == null);
     }
 
     @Override
