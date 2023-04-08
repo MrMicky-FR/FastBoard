@@ -24,7 +24,11 @@
 package fr.mrmicky.fastboard.adventure;
 
 import fr.mrmicky.fastboard.FastBoardBase;
+import fr.mrmicky.fastboard.FastReflection;
+import java.lang.reflect.Array;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.ComponentSerializer;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.lang.invoke.MethodHandle;
@@ -36,8 +40,10 @@ import java.lang.reflect.Method;
  */
 public class FastBoard extends FastBoardBase<Component> {
 
-    private static final MethodHandle AS_VANILLA;
+    private static MethodHandle AS_VANILLA;
     private static final Object EMPTY_COMPONENT;
+    private static boolean CONVERT_TO_LEGACY;
+    private static MethodHandle MESSAGE_FROM_STRING;
 
     static {
         try {
@@ -45,9 +51,23 @@ public class FastBoard extends FastBoardBase<Component> {
             Class<?> paperAdventure = Class.forName("io.papermc.paper.adventure.PaperAdventure");
             Method method = paperAdventure.getDeclaredMethod("asVanilla", Component.class);
             AS_VANILLA = lookup.unreflect(method);
-            EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
+            CONVERT_TO_LEGACY = false;
         } catch (Throwable t) {
-            throw new ExceptionInInitializerError(t);
+            AS_VANILLA = null;
+            CONVERT_TO_LEGACY = true;
+            try {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
+                MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
+            } catch (Throwable t2) {
+                throw new ExceptionInInitializerError(t);
+            }
+        }
+
+        try {
+            EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
+        } catch (Throwable e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 
@@ -70,7 +90,12 @@ public class FastBoard extends FastBoardBase<Component> {
 
     @Override
     protected Object toMinecraftComponent(Component component) throws Throwable {
-        return component != null ? AS_VANILLA.invoke(component) : EMPTY_COMPONENT;
+
+        return component != null
+            ? (CONVERT_TO_LEGACY
+                ? Array.get(MESSAGE_FROM_STRING.invoke(LegacyComponentSerializer.legacySection().serialize(component)), 0)
+                : AS_VANILLA.invoke(component))
+            : EMPTY_COMPONENT;
     }
 
     @Override
