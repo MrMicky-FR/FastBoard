@@ -1,6 +1,6 @@
 # FastBoard
+
 [![Java CI](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml/badge.svg)](https://github.com/MrMicky-FR/FastBoard/actions/workflows/build.yml)
-[![Language grade](https://img.shields.io/lgtm/grade/java/github/MrMicky-FR/FastBoard.svg?logo=lgtm&logoWidth=18&label=code%20quality)](https://lgtm.com/projects/g/MrMicky-FR/FastBoard/context:java)
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22fr.mrmicky%22%20AND%20a:%22fastboard%22)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
@@ -20,6 +20,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
 * Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
 * Supports hex colors on 1.16 and higher
+* [Adventure](https://github.com/KyoriPowered/adventure) components support
 
 ## Installation
 
@@ -56,7 +57,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>1.2.1</version>
+        <version>2.0.0</version>
     </dependency>
 </dependencies>
 ```
@@ -73,7 +74,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:1.2.1'
+    implementation 'fr.mrmicky:fastboard:2.0.0'
 }
 
 shadowJar {
@@ -84,7 +85,7 @@ shadowJar {
 
 ### Manual
 
-Copy `FastBoard.java` and `FastReflection.java` in your plugin.
+Copy `FastBoardBase.java`, `FastBoard.java` and `FastReflection.java` in your plugin.
 
 ## Usage
 
@@ -114,7 +115,6 @@ Small example plugin with a scoreboard that refreshes every second:
 ```java
 package fr.mrmicky.fastboard.example;
 
-import fr.mrmicky.fastboard.FastBoard;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -175,4 +175,24 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
         );
     }
 }
+```
+
+## Adventure support
+
+For servers on modern [PaperMC](https://papermc.io) versions, FastBoard supports
+using [Adventure](https://github.com/KyoriPowered/adventure) components instead of strings, 
+by using the class `fr.mrmicky.fastboard.adventure.FastBoard`.
+
+## ViaBackwards compatibility
+
+When using ViaBackwards on a post-1.13 server with pre-1.13 clients, older clients
+might get incomplete lines. To solve this issue, you can override the method `hasLinesMaxLength()` and return `true` for older clients.
+For example using the ViaVersion API:
+```java
+FastBoard board = new FastBoard(player) { 
+    @Override
+    public boolean hasLinesMaxLength() {
+        return Via.getAPI().getPlayerVersion(getPlayer()) < ProtocolVersion.v1_13.getVersion(); // or just 'return true;'
+    }
+});
 ```
