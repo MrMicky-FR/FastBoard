@@ -55,13 +55,12 @@ public class FastBoard extends FastBoardBase<Component> {
             EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
             CONVERT_TO_LEGACY = false;
         } catch (Throwable t) {
-            AS_VANILLA = null;
-            CONVERT_TO_LEGACY = true;
             try {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
                 Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
                 MESSAGE_FROM_STRING = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
                 EMPTY_MESSAGE = Array.get(MESSAGE_FROM_STRING.invoke(""), 0);
+                CONVERT_TO_LEGACY = true;
             } catch (Throwable t2) {
                 throw new ExceptionInInitializerError(t);
             }
