@@ -24,11 +24,14 @@
 package fr.mrmicky.fastboard.adventure;
 
 import fr.mrmicky.fastboard.FastBoardBase;
+import fr.mrmicky.fastboard.FastReflection;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 
 /**
@@ -36,16 +39,27 @@ import java.lang.reflect.Method;
  */
 public class FastBoard extends FastBoardBase<Component> {
 
-    private static final MethodHandle AS_VANILLA;
+    private static final MethodHandle COMPONENT_METHOD;
     private static final Object EMPTY_COMPONENT;
+    private static final boolean ADVENTURE_SUPPORT;
 
     static {
+        ADVENTURE_SUPPORT = FastReflection
+                .optionalClass("io.papermc.paper.adventure.PaperAdventure")
+                .isPresent();
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
         try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            Class<?> paperAdventure = Class.forName("io.papermc.paper.adventure.PaperAdventure");
-            Method method = paperAdventure.getDeclaredMethod("asVanilla", Component.class);
-            AS_VANILLA = lookup.unreflect(method);
-            EMPTY_COMPONENT = AS_VANILLA.invoke(Component.empty());
+            if (ADVENTURE_SUPPORT) {
+                Class<?> paperAdventure = Class.forName("io.papermc.paper.adventure.PaperAdventure");
+                Method method = paperAdventure.getDeclaredMethod("asVanilla", Component.class);
+                COMPONENT_METHOD = lookup.unreflect(method);
+                EMPTY_COMPONENT = COMPONENT_METHOD.invoke(Component.empty());
+            } else {
+                Class<?> craftChatMessageClass = FastReflection.obcClass("util.CraftChatMessage");
+                COMPONENT_METHOD = lookup.unreflect(craftChatMessageClass.getMethod("fromString", String.class));
+                EMPTY_COMPONENT = Array.get(COMPONENT_METHOD.invoke(""), 0);
+            }
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }
@@ -70,7 +84,19 @@ public class FastBoard extends FastBoardBase<Component> {
 
     @Override
     protected Object toMinecraftComponent(Component component) throws Throwable {
-        return component != null ? AS_VANILLA.invoke(component) : EMPTY_COMPONENT;
+        if (component == null) {
+            return EMPTY_COMPONENT;
+        }
+
+        // If the server isn't running adventure natively, we convert the component to legacy text
+        // and then to a Minecraft chat component
+        if (!ADVENTURE_SUPPORT) {
+            String legacy = LegacyComponentSerializer.legacySection().serialize(component);
+
+            return Array.get(COMPONENT_METHOD.invoke(legacy), 0);
+        }
+
+        return COMPONENT_METHOD.invoke(component);
     }
 
     @Override
