@@ -98,7 +98,7 @@ public class FastBoard extends FastBoardBase<Component> {
         }
 
         // Server supports adventure natively
-        return AS_VANILLA.invoke(component == null);
+        return AS_VANILLA.invoke(component);
     }
 
     @Override
