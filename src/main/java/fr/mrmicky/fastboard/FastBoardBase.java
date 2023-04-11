@@ -248,7 +248,7 @@ public abstract class FastBoardBase<T> {
             if (line < size()) {
                 this.lines.set(line, text);
 
-                sendTeamPacket(getScoreByLine(line), TeamMode.UPDATE);
+                sendLineChange(getScoreByLine(line));
                 return;
             }
 
@@ -328,8 +328,6 @@ public abstract class FastBoardBase<T> {
                     for (int i = oldLinesCopy.size(); i < linesSize; i++) {
                         sendScorePacket(i, ScoreboardAction.CHANGE);
                         sendTeamPacket(i, TeamMode.CREATE, null, null);
-
-                        oldLines.add(oldLines.size() - i, getLineByScore(i));
                     }
                 }
             }
@@ -429,7 +427,7 @@ public abstract class FastBoardBase<T> {
     }
 
     protected T getLineByScore(List<T> lines, int score) {
-        return lines.get(lines.size() - score - 1);
+        return score < lines.size() ? lines.get(lines.size() - score - 1) : null;
     }
 
     protected void sendObjectivePacket(ObjectiveMode mode) throws Throwable {
@@ -554,7 +552,7 @@ public abstract class FastBoardBase<T> {
 
     private void setComponentField(Object packet, T value, int count) throws Throwable {
         if (!VersionType.V1_13.isHigherOrEqual()) {
-            setField(packet, String.class, value, count);
+            setField(packet, String.class, value != null ? value : "", count);
             return;
         }
 
