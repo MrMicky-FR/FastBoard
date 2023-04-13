@@ -62,6 +62,8 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
 </dependencies>
 ```
 
+When using Maven, be careful not to build directly with your IDE configuration but with Maven instead (on IntelliJ IDEA: in the `Maven` tab on the right, `Lifecycle` and `package`).
+
 ### Gradle
 
 ```groovy
