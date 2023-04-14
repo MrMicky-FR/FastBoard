@@ -53,11 +53,18 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.19 
     </plugins>
 </build>
 
+<repositories>
+    <repository>
+        <id>sonatype-snapshots</id>
+        <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
+</repositories>
+
 <dependencies>
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
@@ -72,11 +79,11 @@ plugins {
 }
 
 repositories {
-    mavenCentral()
+    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:2.0.0'
+    implementation 'fr.mrmicky:fastboard:2.0.0-SNAPSHOT'
 }
 
 shadowJar {
