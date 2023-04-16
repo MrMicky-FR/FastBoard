@@ -192,6 +192,10 @@ For servers on modern [PaperMC](https://papermc.io) versions, FastBoard supports
 using [Adventure](https://github.com/KyoriPowered/adventure) components instead of strings, 
 by using the class `fr.mrmicky.fastboard.adventure.FastBoard`.
 
+## RGB colors
+
+When using the non-Adventure version of FastBoard, RGB colors can be added on 1.16 and higher with `ChatColor.of("#RRGGBB")` (`net.md_5.bungee.api.ChatColor` import).
+
 ## ViaBackwards compatibility
 
 When using ViaBackwards on a post-1.13 server with pre-1.13 clients, older clients
