@@ -62,7 +62,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20 
 </dependencies>
 ```
 
-When using Maven, be careful not to build directly with your IDE configuration but with Maven instead (on IntelliJ IDEA: in the `Maven` tab on the right, `Lifecycle` and `package`).
+When using Maven, make sure to build directly with Maven and not with your IDE configuration. (on IntelliJ IDEA: in the `Maven` tab on the right, in `Lifecycle`, use `package`).
 
 ### Gradle
 
