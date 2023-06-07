@@ -1,7 +1,7 @@
 /*
  * This file is part of FastBoard, licensed under the MIT License.
  *
- * Copyright (c) 2019-2021 MrMicky
+ * Copyright (c) 2019-2023 MrMicky
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,7 +50,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.0.0-SNAPSHOT
+ * @version 2.0.0
  */
 public abstract class FastBoardBase<T> {
 
