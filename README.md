@@ -117,6 +117,7 @@ Small example plugin with a scoreboard that refreshes every second:
 ```java
 package fr.mrmicky.fastboard.example;
 
+import fr.mrmicky.fastboard.FastBoard;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
