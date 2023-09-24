@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 /**
  * Lightweight packet-based scoreboard API for Bukkit plugins.
@@ -62,7 +63,9 @@ public abstract class FastBoardBase<T> {
     // Packets and components
     private static final Class<?> CHAT_COMPONENT_CLASS;
     private static final Class<?> CHAT_FORMAT_ENUM;
+    private static final Class<?> DISPLAY_SLOT_ENUM;
     private static final Object RESET_FORMATTING;
+    private static final Object SIDEBAR_DISPLAY_SLOT;
     private static final MethodHandle PLAYER_CONNECTION;
     private static final MethodHandle SEND_PACKET;
     private static final MethodHandle PLAYER_GET_HANDLE;
@@ -107,13 +110,18 @@ public abstract class FastBoardBase<T> {
             Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
                     .filter(field -> field.getType().isAssignableFrom(playerConnectionClass))
                     .findFirst().orElseThrow(NoSuchFieldException::new);
-            Method sendPacketMethod = Arrays.stream(playerConnectionClass.getMethods())
+            Method sendPacketMethod = Stream.concat(
+                            Arrays.stream(playerConnectionClass.getSuperclass().getMethods()),
+                            Arrays.stream(playerConnectionClass.getMethods())
+                    )
                     .filter(m -> m.getParameterCount() == 1 && m.getParameterTypes()[0] == packetClass)
                     .findFirst().orElseThrow(NoSuchMethodException::new);
 
             CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
             CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat");
+            DISPLAY_SLOT_ENUM = FastReflection.nullableNmsClass("world.scores", "DisplaySlot");
             RESET_FORMATTING = FastReflection.enumValueOf(CHAT_FORMAT_ENUM, "RESET", 21);
+            SIDEBAR_DISPLAY_SLOT = DISPLAY_SLOT_ENUM == null ? null : FastReflection.enumValueOf(DISPLAY_SLOT_ENUM, "SIDEBAR", 1);
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
             PLAYER_CONNECTION = lookup.unreflectGetter(playerConnectionField);
             SEND_PACKET = lookup.unreflect(sendPacketMethod);
@@ -452,7 +460,11 @@ public abstract class FastBoardBase<T> {
     protected void sendDisplayObjectivePacket() throws Throwable {
         Object packet = PACKET_SB_DISPLAY_OBJ.invoke();
 
-        setField(packet, int.class, 1); // Position (1: sidebar)
+        if (DISPLAY_SLOT_ENUM != null) {
+            setField(packet, DISPLAY_SLOT_ENUM, SIDEBAR_DISPLAY_SLOT);
+        } else {
+            setField(packet, int.class, 1); // Position (1: sidebar)
+        }
         setField(packet, String.class, this.id); // Score Name
 
         sendPacket(packet);
