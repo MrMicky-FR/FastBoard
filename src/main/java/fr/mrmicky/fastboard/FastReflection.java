@@ -70,14 +70,6 @@ public final class FastReflection {
         return Class.forName(nmsClassName(post1_17package, className));
     }
 
-    public static Class<?> nullableNmsClass(String post1_17package, String className) {
-        try {
-            return nmsClass(post1_17package, className);
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
     public static Optional<Class<?>> nmsOptionalClass(String post1_17package, String className) {
         return optionalClass(nmsClassName(post1_17package, className));
     }

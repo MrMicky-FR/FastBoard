@@ -119,7 +119,7 @@ public abstract class FastBoardBase<T> {
 
             CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
             CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat");
-            DISPLAY_SLOT_ENUM = FastReflection.nullableNmsClass("world.scores", "DisplaySlot");
+            DISPLAY_SLOT_ENUM = FastReflection.nmsOptionalClass("world.scores", "DisplaySlot").orElse(null);
             RESET_FORMATTING = FastReflection.enumValueOf(CHAT_FORMAT_ENUM, "RESET", 21);
             SIDEBAR_DISPLAY_SLOT = DISPLAY_SLOT_ENUM == null ? null : FastReflection.enumValueOf(DISPLAY_SLOT_ENUM, "SIDEBAR", 1);
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
