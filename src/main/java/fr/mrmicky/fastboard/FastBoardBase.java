@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.0.0
+ * @version 2.0.1
  */
 public abstract class FastBoardBase<T> {
 
@@ -411,6 +411,8 @@ public abstract class FastBoardBase<T> {
 
     protected abstract Object toMinecraftComponent(T value) throws Throwable;
 
+    protected abstract String serializeLine(T value);
+
     protected abstract T emptyLine();
 
     private void checkLineNumber(int line, boolean checkInRange, boolean checkMax) {
@@ -561,7 +563,8 @@ public abstract class FastBoardBase<T> {
 
     private void setComponentField(Object packet, T value, int count) throws Throwable {
         if (!VersionType.V1_13.isHigherOrEqual()) {
-            setField(packet, String.class, value != null ? value : "", count);
+            String line = value != null ? serializeLine(value) : "";
+            setField(packet, String.class, line, count);
             return;
         }
 

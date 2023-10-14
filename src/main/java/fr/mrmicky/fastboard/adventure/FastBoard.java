@@ -91,12 +91,17 @@ public class FastBoard extends FastBoardBase<Component> {
         // If the server isn't running adventure natively, we convert the component to legacy text
         // and then to a Minecraft chat component
         if (!ADVENTURE_SUPPORT) {
-            String legacy = LegacyComponentSerializer.legacySection().serialize(component);
+            String legacy = serializeLine(component);
 
             return Array.get(COMPONENT_METHOD.invoke(legacy), 0);
         }
 
         return COMPONENT_METHOD.invoke(component);
+    }
+
+    @Override
+    protected String serializeLine(Component value) {
+        return LegacyComponentSerializer.legacySection().serialize(value);
     }
 
     @Override

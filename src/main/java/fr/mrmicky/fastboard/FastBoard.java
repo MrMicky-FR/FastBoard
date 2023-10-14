@@ -139,6 +139,11 @@ public class FastBoard extends FastBoardBase<String> {
     }
 
     @Override
+    protected String serializeLine(String value) {
+        return value;
+    }
+
+    @Override
     protected String emptyLine() {
         return "";
     }
