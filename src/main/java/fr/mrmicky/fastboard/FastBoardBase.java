@@ -70,7 +70,8 @@ public abstract class FastBoardBase<T> {
     // Scoreboard packets
     private static final FastReflection.PacketConstructor PACKET_SB_OBJ;
     private static final FastReflection.PacketConstructor PACKET_SB_DISPLAY_OBJ;
-    private static final MethodHandle PACKET_SB_SCORE;
+    private static final MethodHandle PACKET_SB_SET_SCORE;
+    private static final MethodHandle PACKET_SB_RESET_SCORE;
     private static final FastReflection.PacketConstructor PACKET_SB_TEAM;
     private static final FastReflection.PacketConstructor PACKET_SB_SERIALIZABLE_TEAM;
     // Scoreboard enums
@@ -135,18 +136,22 @@ public abstract class FastBoardBase<T> {
             SEND_PACKET = lookup.unreflect(sendPacketMethod);
             PACKET_SB_OBJ = FastReflection.findPacketConstructor(packetSbObjClass, lookup);
             PACKET_SB_DISPLAY_OBJ = FastReflection.findPacketConstructor(packetSbDisplayObjClass, lookup);
-            MethodHandle packetSbScore;
+            MethodHandle packetSbSetScore;
+            MethodHandle packetSbResetScore = null;
             if (VersionType.V1_17.isHigherOrEqual()) {
                 if (numberFormat != null) { // 1.20.3+
-                    packetSbScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat));
+                    packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat));
+                    Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket");
+                    packetSbResetScore = lookup.findConstructor(resetScoreClass, MethodType.methodType(void.class, String.class, String.class));
                 } else { // 1.20.2-
                     Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action");
-                    packetSbScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class));
+                    packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class));
                 }
             } else {
-                packetSbScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
+                packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
             }
-            PACKET_SB_SCORE = packetSbScore;
+            PACKET_SB_SET_SCORE = packetSbSetScore;
+            PACKET_SB_RESET_SCORE = packetSbResetScore;
             PACKET_SB_TEAM = FastReflection.findPacketConstructor(packetSbTeamClass, lookup);
             PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass == null ? null : FastReflection.findPacketConstructor(sbTeamClass, lookup);
 
@@ -492,16 +497,18 @@ public abstract class FastBoardBase<T> {
                 ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE;
         if (VersionType.V1_17.isHigherOrEqual()) {
             Object packet;
-            if (NUMBER_FORMAT_INTERFACE != null) { // 1.20.3+
-                packet = PACKET_SB_SCORE.invoke(COLOR_CODES[score], this.id, score, null, null);
+            if (action == ScoreboardAction.CHANGE && NUMBER_FORMAT_INTERFACE != null) { // 1.20.3+
+                packet = PACKET_SB_SET_SCORE.invoke(COLOR_CODES[score], this.id, score, null, null);
+            } else if (PACKET_SB_RESET_SCORE != null) { // 1.20.3+
+                packet = PACKET_SB_RESET_SCORE.invoke(COLOR_CODES[score], this.id);
             } else {
-                packet = PACKET_SB_SCORE.invoke(enumAction, this.id, COLOR_CODES[score], score);
+                packet = PACKET_SB_SET_SCORE.invoke(enumAction, this.id, COLOR_CODES[score], score);
             }
             sendPacket(packet);
             return;
         }
 
-        Object packet = PACKET_SB_SCORE.invoke();
+        Object packet = PACKET_SB_SET_SCORE.invoke();
 
         setField(packet, String.class, COLOR_CODES[score], 0); // Player Name
 
