@@ -32,15 +32,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
@@ -51,7 +43,7 @@ import java.util.stream.Stream;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.0.1
+ * @version 2.0.2
  */
 public abstract class FastBoardBase<T> {
 
@@ -78,6 +70,7 @@ public abstract class FastBoardBase<T> {
     private static final Class<?> DISPLAY_SLOT_TYPE;
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
     private static final Class<?> ENUM_SB_ACTION;
+    private static final Object BLANK_NUMBER_FORMAT;
     private static final Object SIDEBAR_DISPLAY_SLOT;
     private static final Object ENUM_SB_HEALTH_DISPLAY_INTEGER;
     private static final Object ENUM_SB_ACTION_CHANGE;
@@ -132,13 +125,17 @@ public abstract class FastBoardBase<T> {
             Optional<Class<?>> numberFormat = FastReflection.nmsOptionalClass("network.chat.numbers", "NumberFormat");
             MethodHandle packetSbSetScore;
             MethodHandle packetSbResetScore = null;
+            Object blankNumberFormat = null;
 
             if (numberFormat.isPresent()) { // 1.20.3
+                Class<?> blankFormatClass = FastReflection.nmsClass("network.chat.numbers", "BlankFormat");
                 Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket");
                 MethodType setScoreType = MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat.get());
                 MethodType removeScoreType = MethodType.methodType(void.class, String.class, String.class);
+                Optional<Field> blankField = Arrays.stream(blankFormatClass.getFields()).filter(f -> f.getType() == blankFormatClass).findAny();
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, setScoreType);
                 packetSbResetScore = lookup.findConstructor(resetScoreClass, removeScoreType);
+                blankNumberFormat = blankField.isPresent() ? blankField.get().get(null) : null;
             } else if (VersionType.V1_17.isHigherOrEqual()) {
                 Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action");
                 MethodType scoreType = MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class);
@@ -151,6 +148,7 @@ public abstract class FastBoardBase<T> {
             PACKET_SB_RESET_SCORE = packetSbResetScore;
             PACKET_SB_TEAM = FastReflection.findPacketConstructor(packetSbTeamClass, lookup);
             PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass == null ? null : FastReflection.findPacketConstructor(sbTeamClass, lookup);
+            BLANK_NUMBER_FORMAT = blankNumberFormat;
 
             for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
                 if (clazz == null) {
@@ -530,7 +528,7 @@ public abstract class FastBoardBase<T> {
             return;
         }
 
-        sendPacket(PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, null));
+        sendPacket(PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, BLANK_NUMBER_FORMAT));
     }
 
     protected void sendTeamPacket(int score, TeamMode mode) throws Throwable {

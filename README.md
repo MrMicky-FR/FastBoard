@@ -4,9 +4,10 @@
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/fr.mrmicky/fastboard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20 support.
+Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.x support.
 
-⚠️ To use FastBoard on a 1.8 server, the server must be on 1.8.8.
+> [!IMPORTANT]
+> To use FastBoard on a 1.8 server, the server must be on 1.8.8.
 
 ## Features
 
@@ -20,6 +21,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20 
 * Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
 * Supports hex colors on 1.16 and higher
+* No scoreboard scores on 1.20.3 and higher
 * [Adventure](https://github.com/KyoriPowered/adventure) components support
 
 ## Installation
@@ -57,12 +59,13 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>2.0.1</version>
+        <version>2.0.2</version>
     </dependency>
 </dependencies>
 ```
 
-When using Maven, make sure to build directly with Maven and not with your IDE configuration (on IntelliJ IDEA: in the `Maven` tab on the right, in `Lifecycle`, use `package`).
+> [!NOTE]
+> When using Maven, make sure to build directly with Maven and not with your IDE configuration (on IntelliJ IDEA: in the `Maven` tab on the right, in `Lifecycle`, use `package`).
 
 ### Gradle
 
@@ -76,7 +79,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:2.0.1'
+    implementation 'fr.mrmicky:fastboard:2.0.2'
 }
 
 shadowJar {
