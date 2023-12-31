@@ -288,11 +288,7 @@ public abstract class FastBoardBase<T> {
      * @throws IndexOutOfBoundsException if the line is higher than {@link #size() size() + 1}
      */
     public synchronized void updateLine(int line, T text) {
-        try {
-            updateLineAndScore(line, text, null);
-        } catch (Throwable t) {
-            throw new RuntimeException("Unable to update scoreboard lines", t);
-        }
+        updateLineAndScore(line, text, null);
     }
 
     /**
@@ -374,11 +370,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public synchronized void updateLines(Collection<T> lines) {
-        try {
-            updateLinesAndScores(lines, null);
-        } catch (Throwable t) {
-            throw new RuntimeException("Unable to update scoreboard lines", t);
-        }
+        updateLinesAndScores(lines, null);
     }
 
     /**
