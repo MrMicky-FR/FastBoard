@@ -56,11 +56,11 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 </build>
 
 <dependencies>
-<dependency>
-    <groupId>fr.mrmicky</groupId>
-    <artifactId>fastboard</artifactId>
-    <version>2.0.2</version>
-</dependency>
+    <dependency>
+        <groupId>fr.mrmicky</groupId>
+        <artifactId>fastboard</artifactId>
+        <version>2.0.2</version>
+    </dependency>
 </dependencies>
 ```
 
@@ -107,9 +107,9 @@ board.updateTitle(ChatColor.GOLD + "FastBoard");
 // Change the lines
 board.updateLines(
         "", // Empty line
-                "One line",
-                "",
-                "Second line"
+        "One line",
+        "",
+        "Second line"
 );
 ```
 
