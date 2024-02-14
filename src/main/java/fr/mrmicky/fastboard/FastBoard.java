@@ -148,11 +148,6 @@ public class FastBoard extends FastBoardBase<String> {
         return "";
     }
 
-    @Override
-    protected String convertScoreNumber(int score) {
-        return ChatColor.RED + "" + score;
-    }
-
     /**
      * Return if the player has a prefix/suffix characters limit.
      * By default, it returns true only in 1.12 or lower.

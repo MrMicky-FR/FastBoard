@@ -46,6 +46,7 @@ import java.util.stream.Stream;
  * @version 2.0.2
  */
 public abstract class FastBoardBase<T> {
+
     private static final Map<Class<?>, Field[]> PACKETS = new HashMap<>(8);
     protected static final String[] COLOR_CODES = Arrays.stream(ChatColor.values())
             .map(Object::toString)
@@ -58,7 +59,7 @@ public abstract class FastBoardBase<T> {
     private static final MethodHandle PLAYER_CONNECTION;
     private static final MethodHandle SEND_PACKET;
     private static final MethodHandle PLAYER_GET_HANDLE;
-    private static final MethodHandle FIXED_NUMBER_FORMAT_HANDLE;
+    private static final MethodHandle FIXED_NUMBER_FORMAT;
     // Scoreboard packets
     private static final FastReflection.PacketConstructor PACKET_SB_OBJ;
     private static final FastReflection.PacketConstructor PACKET_SB_DISPLAY_OBJ;
@@ -152,8 +153,8 @@ public abstract class FastBoardBase<T> {
             PACKET_SB_RESET_SCORE = packetSbResetScore;
             PACKET_SB_TEAM = FastReflection.findPacketConstructor(packetSbTeamClass, lookup);
             PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass == null ? null : FastReflection.findPacketConstructor(sbTeamClass, lookup);
+            FIXED_NUMBER_FORMAT = fixedFormatConstructor;
             BLANK_NUMBER_FORMAT = blankNumberFormat;
-            FIXED_NUMBER_FORMAT_HANDLE = fixedFormatConstructor;
 
             for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
                 if (clazz == null) {
@@ -268,16 +269,16 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get how a specific line's score is displayed. If on 1.20.2 or below, will return the score number in red.
+     * Get how a specific line's score is displayed. On 1.20.2 or below, the value returned isn't used.
      *
      * @param line the line number
-     * @return the text of how the line is displayed. null means it is not being displayed
+     * @return the text of how the line is displayed
      * @throws IndexOutOfBoundsException if the line is higher than {@code size}
      */
-    public T getScore(int line) {
+    public Optional<T> getScore(int line) {
         checkLineNumber(line, true, false);
 
-        return BLANK_NUMBER_FORMAT != null ? this.scores.get(line) : convertScoreNumber(getScoreByLine(line));
+        return Optional.ofNullable(this.scores.get(line));
     }
 
     /**
@@ -288,45 +289,49 @@ public abstract class FastBoardBase<T> {
      * @throws IndexOutOfBoundsException if the line is higher than {@link #size() size() + 1}
      */
     public synchronized void updateLine(int line, T text) {
-        updateLineAndScore(line, text, null);
+        updateLine(line, text, null);
     }
 
     /**
      * Update a single scoreboard line including how its score is displayed.
-     * If on 1.20.2 and below, please use {@link #updateLine(int, Object)}
+     * The score will only be displayed on 1.20.3 and higher.
      *
      * @param line the line number
      * @param text the new line text
      * @param scoreText the new line's score, if null will not change current value
      * @throws IndexOutOfBoundsException if the line is higher than {@link #size() size() + 1}
      */
-    public synchronized void updateLineAndScore(int line, T text, T scoreText) {
+    public synchronized void updateLine(int line, T text, T scoreText) {
         checkLineNumber(line, false, false);
 
         try {
             if (line < size()) {
                 this.lines.set(line, text);
-                if (BLANK_NUMBER_FORMAT != null && scoreText != null)
-                    this.scores.set(line, scoreText);
+                this.scores.set(line, scoreText);
 
                 sendLineChange(getScoreByLine(line));
+
+                if (customScoresSupported()) {
+                    sendScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
+                }
+
                 return;
             }
 
             List<T> newLines = new ArrayList<>(this.lines);
-            List<T> newLineScores = new ArrayList<>(this.scores);
+            List<T> newScores = new ArrayList<>(this.scores);
 
             if (line > size()) {
                 for (int i = size(); i < line; i++) {
                     newLines.add(emptyLine());
-                    newLineScores.add(emptyLine());
+                    newScores.add(null);
                 }
             }
 
             newLines.add(text);
-            newLineScores.add(scoreText);
+            newScores.add(scoreText);
 
-            updateLinesAndScores(newLines, newLineScores);
+            updateLines(newLines, newScores);
         } catch (Throwable t) {
             throw new RuntimeException("Unable to update scoreboard lines", t);
         }
@@ -345,10 +350,10 @@ public abstract class FastBoardBase<T> {
         }
 
         List<T> newLines = new ArrayList<>(this.lines);
-        List<T> newLineScores = new ArrayList<>(this.scores);
+        List<T> newScores = new ArrayList<>(this.scores);
         newLines.remove(line);
-        newLineScores.remove(line);
-        updateLinesAndScores(newLines, newLineScores);
+        newScores.remove(line);
+        updateLines(newLines, newScores);
     }
 
     /**
@@ -370,22 +375,24 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public synchronized void updateLines(Collection<T> lines) {
-        updateLinesAndScores(lines, null);
+        updateLines(lines, null);
     }
 
     /**
      * Update the lines and how their score is displayed on the scoreboard.
-     * If on 1.20.2 and below, please use {@link #updateLines(Collection)}
+     * The scores will only be displayed for servers on 1.20.3 and higher.
      *
      * @param lines the new scoreboard lines
-     * @param lineScores the set for how each line's score should be, if null will fall back to default (blank)
-     * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower or if the size of lines != lineScores
+     * @param scores the set for how each line's score should be, if null will fall back to default (blank)
+     * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
+     * @throws IllegalArgumentException if lines and scores are not the same size
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
-    public synchronized void updateLinesAndScores(Collection<T> lines, Collection<T> lineScores) {
+    public synchronized void updateLines(Collection<T> lines, Collection<T> scores) {
         Objects.requireNonNull(lines, "lines");
         checkLineNumber(lines.size(), false, true);
-        if (lineScores != null && lineScores.size() != lines.size()) {
+
+        if (scores != null && scores.size() != lines.size()) {
             throw new IllegalArgumentException("The size of the scores must match the size of the board");
         }
 
@@ -393,16 +400,9 @@ public abstract class FastBoardBase<T> {
         this.lines.clear();
         this.lines.addAll(lines);
 
-        List<T> oldLineScores = new ArrayList<>(this.scores);
+        List<T> oldScores = new ArrayList<>(this.scores);
         this.scores.clear();
-
-        if (BLANK_NUMBER_FORMAT != null && lineScores != null) {
-            this.scores.addAll(lineScores);
-        }  else {
-            for (int i = 0; i < lines.size(); i++) {
-                this.scores.add(emptyLine());
-            }
-        }
+        this.scores.addAll(scores != null ? scores : Collections.nCopies(lines.size(), null));
 
         int linesSize = this.lines.size();
 
@@ -428,7 +428,7 @@ public abstract class FastBoardBase<T> {
                 if (!Objects.equals(getLineByScore(oldLines, i), getLineByScore(i))) {
                     sendLineChange(i);
                 }
-                if (!Objects.equals(getLineByScore(oldLineScores, i), getLineByScore(scores, i))) {
+                if (!Objects.equals(getLineByScore(oldScores, i), getLineByScore(this.scores, i))) {
                     sendScorePacket(i, ScoreboardAction.CHANGE);
                 }
             }
@@ -438,9 +438,8 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Update how a specified line's score is displayed on the scoreboard. Values of null will
-     * reset the displayed text back to default.
-     * Only available in 1.20.3+
+     * Update how a specified line's score is displayed on the scoreboard. A null value will reset the displayed
+     * text back to default. The scores will only be displayed for servers on 1.20.3 and higher.
      *
      * @param line the line number
      * @param text the text to be displayed as the score. if null, no score will be displayed
@@ -449,20 +448,20 @@ public abstract class FastBoardBase<T> {
      */
     public synchronized void updateScore(int line, T text) {
         checkLineNumber(line, true, false);
-        if (BLANK_NUMBER_FORMAT == null)
-            return;
 
-        scores.set(line, text);
+        this.scores.set(line, text);
+
         try {
-            sendScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
+            if (customScoresSupported()) {
+                sendScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
+            }
         } catch (Throwable e) {
             throw new RuntimeException("Unable to update line score", e);
         }
     }
 
     /**
-     * Reset a line's score back to default (blank).
-     * Only available in 1.20.3+
+     * Reset a line's score back to default (blank). The score will only be displayed for servers on 1.20.3 and higher.
      *
      * @param line the line number
      * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
@@ -474,7 +473,7 @@ public abstract class FastBoardBase<T> {
 
     /**
      * Update how all lines' scores are displayed. A value of null will reset the displayed text back to default.
-     * Only available in 1.20.3+
+     * The scores will only be displayed for servers on 1.20.3 and higher.
      *
      * @param texts the set of texts to be displayed as the scores
      * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
@@ -485,8 +484,8 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Update how all lines' scores are displayed. A value of null will reset the displayed text back to default.
-     * Only available in 1.20.3+
+     * Update how all lines' scores are displayed.  A null value will reset the displayed
+     * text back to default (blank). Only available on 1.20.3+ servers.
      *
      * @param texts the set of texts to be displayed as the scores
      * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
@@ -494,24 +493,27 @@ public abstract class FastBoardBase<T> {
      */
     public synchronized void updateScores(Collection<T> texts) {
         Objects.requireNonNull(texts, "texts");
-        if (scores.size() != this.lines.size())
+
+        if (this.scores.size() != this.lines.size()) {
             throw new IllegalArgumentException("The size of the scores must match the size of the board");
-        if (BLANK_NUMBER_FORMAT == null)
-            return;
-
-        List<T> newDisplayedScores = new ArrayList<>(texts);
-        for (int i = 0; i < scores.size(); i++) {
-            if (Objects.equals(scores.get(i), newDisplayedScores.get(i)))
-                continue;
-
-            scores.set(i, newDisplayedScores.get(i));
-            try {
-                sendScorePacket(getScoreByLine(i), ScoreboardAction.CHANGE);
-            } catch (Throwable e) {
-                throw new RuntimeException("Unable to update score text", e);
-            }
         }
 
+        List<T> newScores = new ArrayList<>(texts);
+        for (int i = 0; i < this.scores.size(); i++) {
+            if (Objects.equals(this.scores.get(i), newScores.get(i))) {
+                continue;
+            }
+
+            this.scores.set(i, newScores.get(i));
+
+            try {
+                if (customScoresSupported()) {
+                    sendScorePacket(getScoreByLine(i), ScoreboardAction.CHANGE);
+                }
+            } catch (Throwable e) {
+                throw new RuntimeException("Unable to update scores", e);
+            }
+        }
     }
 
     /**
@@ -539,6 +541,15 @@ public abstract class FastBoardBase<T> {
      */
     public boolean isDeleted() {
         return this.deleted;
+    }
+
+    /**
+     * Get if the server supports custom scoreboard scores (1.20.3+ servers only).
+     *
+     * @return true if the server supports custom scores
+     */
+    public boolean customScoresSupported() {
+        return BLANK_NUMBER_FORMAT != null;
     }
 
     /**
@@ -577,8 +588,6 @@ public abstract class FastBoardBase<T> {
     protected abstract String serializeLine(T value);
 
     protected abstract T emptyLine();
-
-    protected abstract T convertScoreNumber(int score);
 
     private void checkLineNumber(int line, boolean checkInRange, boolean checkMax) {
         if (line < 0) {
@@ -664,6 +673,7 @@ public abstract class FastBoardBase<T> {
         String objName = COLOR_CODES[score];
         Object enumAction = action == ScoreboardAction.REMOVE
                 ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE;
+
         if (PACKET_SB_RESET_SCORE == null) { // Pre 1.20.3
             sendPacket(PACKET_SB_SET_SCORE.invoke(enumAction, this.id, objName, score));
             return;
@@ -674,11 +684,12 @@ public abstract class FastBoardBase<T> {
             return;
         }
 
-        Object format = Objects.equals(getLineByScore(scores, score), emptyLine()) ? BLANK_NUMBER_FORMAT :
-                FIXED_NUMBER_FORMAT_HANDLE.invoke(toMinecraftComponent(getLineByScore(scores, score)));
+        T scoreFormat = getLineByScore(this.scores, score);
+        Object format = scoreFormat != null
+                ? FIXED_NUMBER_FORMAT.invoke(toMinecraftComponent(scoreFormat))
+                : BLANK_NUMBER_FORMAT;
 
         sendPacket(PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, format));
-
     }
 
     protected void sendTeamPacket(int score, TeamMode mode) throws Throwable {

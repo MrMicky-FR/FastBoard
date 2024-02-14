@@ -13,7 +13,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 
 * No flickering (without using a buffer)
 * Works with all versions from 1.7.10 to 1.20
-* Very small (around 600 lines of code with the JavaDoc) and no dependencies
+* Small (around 750 lines of code with the JavaDoc) and no dependencies
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can directly give a string list (or array) to change all the lines
 * Everything is at the packet level, so it works with other plugins using scoreboard and/or teams
@@ -21,7 +21,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 * Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
 * Supports hex colors on 1.16 and higher
-* No scoreboard scores on 1.20.3 and higher
+* Custom scores (including blank) on 1.20.3 and higher
 * [Adventure](https://github.com/KyoriPowered/adventure) components support
 
 ## Installation
@@ -56,11 +56,11 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 </build>
 
 <dependencies>
-    <dependency>
-        <groupId>fr.mrmicky</groupId>
-        <artifactId>fastboard</artifactId>
-        <version>2.0.2</version>
-    </dependency>
+<dependency>
+    <groupId>fr.mrmicky</groupId>
+    <artifactId>fastboard</artifactId>
+    <version>2.0.2</version>
+</dependency>
 </dependencies>
 ```
 
@@ -107,9 +107,9 @@ board.updateTitle(ChatColor.GOLD + "FastBoard");
 // Change the lines
 board.updateLines(
         "", // Empty line
-        "One line",
-        "",
-        "Second line"
+                "One line",
+                "",
+                "Second line"
 );
 ```
 
@@ -186,7 +186,7 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 ## Adventure support
 
 For servers on modern [PaperMC](https://papermc.io) versions, FastBoard supports
-using [Adventure](https://github.com/KyoriPowered/adventure) components instead of strings, 
+using [Adventure](https://github.com/KyoriPowered/adventure) components instead of strings,
 by using the class `fr.mrmicky.fastboard.adventure.FastBoard`.
 
 ## RGB colors
@@ -199,7 +199,7 @@ When using ViaBackwards on a post-1.13 server with pre-1.13 clients, older clien
 might get incomplete lines. To solve this issue, you can override the method `hasLinesMaxLength()` and return `true` for older clients.
 For example using the ViaVersion API:
 ```java
-FastBoard board = new FastBoard(player) { 
+FastBoard board = new FastBoard(player) {
     @Override
     public boolean hasLinesMaxLength() {
         return Via.getAPI().getPlayerVersion(getPlayer()) < ProtocolVersion.v1_13.getVersion(); // or just 'return true;'

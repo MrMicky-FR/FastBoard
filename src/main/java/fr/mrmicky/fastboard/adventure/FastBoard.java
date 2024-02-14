@@ -26,7 +26,6 @@ package fr.mrmicky.fastboard.adventure;
 import fr.mrmicky.fastboard.FastBoardBase;
 import fr.mrmicky.fastboard.FastReflection;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
@@ -108,10 +107,5 @@ public class FastBoard extends FastBoardBase<Component> {
     @Override
     protected Component emptyLine() {
         return Component.empty();
-    }
-
-    @Override
-    protected Component convertScoreNumber(int score) {
-        return Component.text("" + score).color(NamedTextColor.RED);
     }
 }
