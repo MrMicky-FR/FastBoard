@@ -20,9 +20,9 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 * Can be used asynchronously
 * Supports up to 30 characters per line on 1.12.2 and below
 * No character limit on 1.13 and higher
-* Supports hex colors on 1.16 and higher
-* Custom scores (including blank) on 1.20.3 and higher
-* [Adventure](https://github.com/KyoriPowered/adventure) components support
+* [RGB HEX colors support](#rgb-colors) on 1.16 and higher
+* [Custom number formatting](#custom-number-formatting) (including blank) for scores on 1.20.3 and higher
+* [Adventure components support](#adventure-support)
 
 ## Installation
 
@@ -192,6 +192,14 @@ by using the class `fr.mrmicky.fastboard.adventure.FastBoard`.
 ## RGB colors
 
 When using the non-Adventure version of FastBoard, RGB colors can be added on 1.16 and higher with `ChatColor.of("#RRGGBB")` (`net.md_5.bungee.api.ChatColor` import).
+
+## Custom number formatting
+
+For servers on Minecraft 1.20.3 and higher, FastBoard supports custom number formatting for scores.
+By default, the blank format is used, so no score is visible, but it's also possible to specify custom scores using `FastBoard#updateLine(line, text, scoreText)`,
+`FastBoard#updateLines(lines, scores)` and `FastBoard#updateScore(line, text)`.
+
+Passing a `null` value as a score will result in a reset to the default blank formatting.
 
 ## ViaBackwards compatibility
 
