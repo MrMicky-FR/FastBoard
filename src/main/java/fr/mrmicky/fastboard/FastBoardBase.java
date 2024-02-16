@@ -443,7 +443,7 @@ public abstract class FastBoardBase<T> {
      *
      * @param line the line number
      * @param text the text to be displayed as the score. if null, no score will be displayed
-     * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
+     * @throws IllegalArgumentException if the line number is not in range
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public synchronized void updateScore(int line, T text) {
@@ -464,11 +464,11 @@ public abstract class FastBoardBase<T> {
      * Reset a line's score back to default (blank). The score will only be displayed for servers on 1.20.3 and higher.
      *
      * @param line the line number
-     * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
+     * @throws IllegalArgumentException if the line number is not in range
      * @throws IllegalStateException    if {@link #delete()} was call before
      */
     public synchronized void removeScore(int line) {
-        updateScore(line, emptyLine());
+        updateScore(line, null);
     }
 
     /**
