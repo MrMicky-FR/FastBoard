@@ -141,10 +141,10 @@ public abstract class FastBoardBase<T> {
                 MethodType fixedFormatType = MethodType.methodType(void.class, CHAT_COMPONENT_CLASS);
                 Optional<Field> blankField = Arrays.stream(blankFormatClass.getFields()).filter(f -> f.getType() == blankFormatClass).findAny();
                 // Fields are of type Optional in 1.20.5+
-                Optional<MethodHandle> optionalScorePacket = FastReflection.optionalConstructor(packetSbScoreClass, lookup, scoreType);
+                Optional<MethodHandle> optionalScorePacket = FastReflection.optionalConstructor(packetSbScoreClass, lookup, scoreTypeOptional);
                 fixedFormatConstructor = lookup.findConstructor(fixedFormatClass, fixedFormatType);
                 packetSbSetScore = optionalScorePacket.isPresent() ? optionalScorePacket.get()
-                        : lookup.findConstructor(packetSbScoreClass, scoreTypeOptional);
+                        : lookup.findConstructor(packetSbScoreClass, scoreType);
                 scoreOptionalComponents = optionalScorePacket.isPresent();
                 packetSbResetScore = lookup.findConstructor(resetScoreClass, removeScoreType);
                 blankNumberFormat = blankField.isPresent() ? blankField.get().get(null) : null;
