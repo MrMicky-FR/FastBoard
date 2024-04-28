@@ -136,8 +136,7 @@ public final class FastReflection {
         if (server.getPackage().getName().equals(OBC_PACKAGE)) {
             return "";
         }
-        String version = server.getName().substring("org.bukkit.craftbukkit.".length());
-        return version.substring(0, version.length() - ".CraftServer".length());
+        return server.getPackage().getName().substring(OBC_PACKAGE.length() + 1);
     }
 
     public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) throws Exception {
