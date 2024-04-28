@@ -6,7 +6,7 @@
 
     <groupId>fr.mrmicky</groupId>
     <artifactId>fastboard</artifactId>
-    <version>2.1.0</version>
+    <version>2.1.1</version>
 
     <name>FastBoard</name>
     <description>Lightweight packet-based scoreboard API for Bukkit plugins.</description>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.1.0
+ * @version 2.1.1
  */
 public abstract class FastBoardBase<T> {
 
@@ -67,6 +67,7 @@ public abstract class FastBoardBase<T> {
     private static final FastReflection.PacketConstructor PACKET_SB_SERIALIZABLE_TEAM;
     private static final MethodHandle PACKET_SB_SET_SCORE;
     private static final MethodHandle PACKET_SB_RESET_SCORE;
+    private static final boolean SCORE_OPTIONAL_COMPONENTS;
     // Scoreboard enums
     private static final Class<?> DISPLAY_SLOT_TYPE;
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
@@ -128,17 +129,23 @@ public abstract class FastBoardBase<T> {
             MethodHandle packetSbResetScore = null;
             MethodHandle fixedFormatConstructor = null;
             Object blankNumberFormat = null;
+            boolean scoreOptionalComponents = false;
 
             if (numberFormat.isPresent()) { // 1.20.3
                 Class<?> blankFormatClass = FastReflection.nmsClass("network.chat.numbers", "BlankFormat");
                 Class<?> fixedFormatClass = FastReflection.nmsClass("network.chat.numbers", "FixedFormat");
                 Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket");
-                MethodType setScoreType = MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat.get());
+                MethodType scoreType = MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat.get());
+                MethodType scoreTypeOptional = MethodType.methodType(void.class, String.class, String.class, int.class, Optional.class, Optional.class);
                 MethodType removeScoreType = MethodType.methodType(void.class, String.class, String.class);
                 MethodType fixedFormatType = MethodType.methodType(void.class, CHAT_COMPONENT_CLASS);
                 Optional<Field> blankField = Arrays.stream(blankFormatClass.getFields()).filter(f -> f.getType() == blankFormatClass).findAny();
+                // Fields are of type Optional in 1.20.5+
+                Optional<MethodHandle> optionalScorePacket = FastReflection.optionalConstructor(packetSbScoreClass, lookup, scoreTypeOptional);
                 fixedFormatConstructor = lookup.findConstructor(fixedFormatClass, fixedFormatType);
-                packetSbSetScore = lookup.findConstructor(packetSbScoreClass, setScoreType);
+                packetSbSetScore = optionalScorePacket.isPresent() ? optionalScorePacket.get()
+                        : lookup.findConstructor(packetSbScoreClass, scoreType);
+                scoreOptionalComponents = optionalScorePacket.isPresent();
                 packetSbResetScore = lookup.findConstructor(resetScoreClass, removeScoreType);
                 blankNumberFormat = blankField.isPresent() ? blankField.get().get(null) : null;
             } else if (VersionType.V1_17.isHigherOrEqual()) {
@@ -155,6 +162,7 @@ public abstract class FastBoardBase<T> {
             PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass == null ? null : FastReflection.findPacketConstructor(sbTeamClass, lookup);
             FIXED_NUMBER_FORMAT = fixedFormatConstructor;
             BLANK_NUMBER_FORMAT = blankNumberFormat;
+            SCORE_OPTIONAL_COMPONENTS = scoreOptionalComponents;
 
             for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
                 if (clazz == null) {
@@ -623,6 +631,7 @@ public abstract class FastBoardBase<T> {
 
         if (mode != ObjectiveMode.REMOVE) {
             setComponentField(packet, this.title, 1);
+            setField(packet, Optional.class, Optional.empty()); // Number format for 1.20.5+, previously nullable
 
             if (VersionType.V1_8.isHigherOrEqual()) {
                 setField(packet, ENUM_SB_HEALTH_DISPLAY, ENUM_SB_HEALTH_DISPLAY_INTEGER);
@@ -688,8 +697,11 @@ public abstract class FastBoardBase<T> {
         Object format = scoreFormat != null
                 ? FIXED_NUMBER_FORMAT.invoke(toMinecraftComponent(scoreFormat))
                 : BLANK_NUMBER_FORMAT;
+        Object scorePacket = SCORE_OPTIONAL_COMPONENTS
+                ? PACKET_SB_SET_SCORE.invoke(objName, this.id, score, Optional.empty(), Optional.of(format))
+                : PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, format);
 
-        sendPacket(PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, format));
+        sendPacket(scorePacket);
     }
 
     protected void sendTeamPacket(int score, TeamMode mode) throws Throwable {

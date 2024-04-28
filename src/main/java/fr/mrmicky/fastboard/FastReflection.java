@@ -119,6 +119,14 @@ public final class FastReflection {
         throw new ClassNotFoundException("No class in " + parentClass.getCanonicalName() + " matches the predicate.");
     }
 
+    static Optional<MethodHandle> optionalConstructor(Class<?> declaringClass, MethodHandles.Lookup lookup, MethodType type) throws IllegalAccessException {
+        try {
+            return Optional.of(lookup.findConstructor(declaringClass, type));
+        } catch (NoSuchMethodException e) {
+            return Optional.empty();
+        }
+    }
+
     public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) throws Exception {
         try {
             MethodHandle constructor = lookup.findConstructor(packetClass, VOID_METHOD_TYPE);
