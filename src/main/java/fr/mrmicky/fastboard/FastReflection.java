@@ -59,8 +59,10 @@ public final class FastReflection {
     public static String nmsClassName(String post1_17package, String className) {
         if (NMS_REPACKAGED) {
             String classPackage = post1_17package == null ? NM_PACKAGE : NM_PACKAGE + '.' + post1_17package;
+
             return classPackage + '.' + className;
         }
+
         return NMS_PACKAGE + '.' + className;
     }
 
