@@ -40,11 +40,8 @@ import java.util.function.Predicate;
 public final class FastReflection {
 
     private static final String NM_PACKAGE = "net.minecraft";
-    public static final String OBC_PACKAGE = "org.bukkit.craftbukkit";
-    public static final String NMS_PACKAGE = NM_PACKAGE + ".server";
-    private static final String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName();
-
-    public static final String VERSION = getServerVersion();
+    private static final String OBC_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
+    private static final String NMS_PACKAGE = OBC_PACKAGE.replace("org.bukkit.craftbukkit", NM_PACKAGE + ".server");
 
     private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
     private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
@@ -64,7 +61,7 @@ public final class FastReflection {
             String classPackage = post1_17package == null ? NM_PACKAGE : NM_PACKAGE + '.' + post1_17package;
             return classPackage + '.' + className;
         }
-        return NMS_PACKAGE + '.' + VERSION + '.' + className;
+        return NMS_PACKAGE + '.' + className;
     }
 
     public static Class<?> nmsClass(String post1_17package, String className) throws ClassNotFoundException {
@@ -76,7 +73,7 @@ public final class FastReflection {
     }
 
     public static String obcClassName(String className) {
-        return OBC_PREFIX + '.' + className;
+        return OBC_PACKAGE + '.' + className;
     }
 
     public static Class<?> obcClass(String className) throws ClassNotFoundException {
@@ -126,17 +123,6 @@ public final class FastReflection {
         } catch (NoSuchMethodException e) {
             return Optional.empty();
         }
-    }
-
-    private static String getServerVersion() {
-        Class<?> server = Bukkit.getServer().getClass();
-        if (!server.getSimpleName().equals("CraftServer")) {
-            return "";
-        }
-        if (server.getPackage().getName().equals(OBC_PACKAGE)) {
-            return "";
-        }
-        return server.getPackage().getName().substring(OBC_PACKAGE.length() + 1);
     }
 
     public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) throws Exception {
