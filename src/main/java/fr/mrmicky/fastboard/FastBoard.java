@@ -104,8 +104,7 @@ public class FastBoard extends FastBoardBase<String> {
             prefix = line;
         } else {
             // Prevent splitting color codes
-            int index = line.charAt(maxLength - 1) == ChatColor.COLOR_CHAR
-                    ? (maxLength - 1) : maxLength;
+            int index = Math.min(line.length(), maxLength);
             prefix = line.substring(0, index);
             String suffixTmp = line.substring(index);
             ChatColor chatColor = null;
