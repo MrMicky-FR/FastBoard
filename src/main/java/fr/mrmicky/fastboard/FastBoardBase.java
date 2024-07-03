@@ -194,7 +194,7 @@ public abstract class FastBoardBase<T> {
                         : "PacketPlayOutScoreboardScore$EnumScoreboardAction";
                 ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsOptionalClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay")
                         .orElse(FastReflection.nmsClass("world.scores.criteria", "ObjectiveCriteria$RenderType"));
-                ENUM_SB_ACTION = FastReflection.nmsOptionalClass("server", enumSbActionClass) // junky
+                ENUM_SB_ACTION = FastReflection.nmsOptionalClass("server", enumSbActionClass)
                         .orElse(FastReflection.nmsClass("server", "ServerScoreboard$Method"));
                 ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER", 0);
                 ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE", 0);
