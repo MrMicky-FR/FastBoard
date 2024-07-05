@@ -70,6 +70,20 @@ public final class FastReflection {
         return Class.forName(nmsClassName(post1_17package, className));
     }
 
+    public static Class<?> nmsClass(String post1_17package, String spigotClassName, String mojangClassName) throws ClassNotFoundException {
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(nmsClassName(post1_17package, spigotClassName));
+        } catch (ClassNotFoundException spigotNotFound) {
+            try {
+                clazz = Class.forName(nmsClassName(post1_17package, mojangClassName));
+            } catch (ClassNotFoundException mojangNotFound) {
+                throw new ClassNotFoundException("Class : " + spigotClassName + " / " + mojangClassName + " could not be found");
+            }
+        }
+        return clazz;
+    }
+
     public static Optional<Class<?>> nmsOptionalClass(String post1_17package, String className) {
         return optionalClass(nmsClassName(post1_17package, className));
     }
