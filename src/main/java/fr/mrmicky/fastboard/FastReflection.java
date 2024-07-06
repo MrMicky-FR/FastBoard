@@ -45,6 +45,7 @@ public final class FastReflection {
 
     private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
     private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
+    private static final boolean MOJANG_MAPPINGS = optionalClass(NM_PACKAGE + ".network.chat.Component").isPresent();
 
     private static volatile Object theUnsafe;
 
@@ -70,18 +71,8 @@ public final class FastReflection {
         return Class.forName(nmsClassName(post1_17package, className));
     }
 
-    public static Class<?> nmsClass(String post1_17package, String spigotClassName, String mojangClassName) throws ClassNotFoundException {
-        Class<?> clazz;
-        try {
-            clazz = Class.forName(nmsClassName(post1_17package, spigotClassName));
-        } catch (ClassNotFoundException spigotNotFound) {
-            try {
-                clazz = Class.forName(nmsClassName(post1_17package, mojangClassName));
-            } catch (ClassNotFoundException mojangNotFound) {
-                throw new ClassNotFoundException("Class : " + spigotClassName + " / " + mojangClassName + " could not be found");
-            }
-        }
-        return clazz;
+    public static Class<?> nmsClass(String post1_17package, String spigotClass, String mojangClass) throws ClassNotFoundException {
+        return nmsClass(post1_17package, MOJANG_MAPPINGS ? mojangClass : spigotClass);
     }
 
     public static Optional<Class<?>> nmsOptionalClass(String post1_17package, String className) {
