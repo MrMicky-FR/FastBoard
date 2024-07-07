@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.1.2
+ * @version 2.1.3
  */
 public abstract class FastBoardBase<T> {
 
@@ -98,7 +98,7 @@ public abstract class FastBoardBase<T> {
             Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
             Class<?> entityPlayerClass = FastReflection.nmsClass("server.level", "EntityPlayer", "ServerPlayer");
             Class<?> playerConnectionClass = FastReflection.nmsClass("server.network", "PlayerConnection", "ServerGamePacketListenerImpl");
-            Class<?> packetClass = FastReflection.nmsClass("network.protocol", "Packet"); // same name
+            Class<?> packetClass = FastReflection.nmsClass("network.protocol", "Packet");
             Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective", "ClientboundSetObjectivePacket");
             Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective", "ClientboundSetDisplayObjectivePacket");
             Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore", "ClientboundSetScorePacket");
@@ -134,9 +134,9 @@ public abstract class FastBoardBase<T> {
             boolean scoreOptionalComponents = false;
 
             if (numberFormat.isPresent()) { // 1.20.3
-                Class<?> blankFormatClass = FastReflection.nmsClass("network.chat.numbers", "BlankFormat"); // same name
-                Class<?> fixedFormatClass = FastReflection.nmsClass("network.chat.numbers", "FixedFormat"); // same name
-                Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket"); // same name
+                Class<?> blankFormatClass = FastReflection.nmsClass("network.chat.numbers", "BlankFormat");
+                Class<?> fixedFormatClass = FastReflection.nmsClass("network.chat.numbers", "FixedFormat");
+                Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket");
                 MethodType scoreType = MethodType.methodType(void.class, String.class, String.class, int.class, CHAT_COMPONENT_CLASS, numberFormat.get());
                 MethodType scoreTypeOptional = MethodType.methodType(void.class, String.class, String.class, int.class, Optional.class, Optional.class);
                 MethodType removeScoreType = MethodType.methodType(void.class, String.class, String.class);
