@@ -4,7 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/fr.mrmicky/fastboard.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/fr.mrmicky/fastboard)
 [![Discord](https://img.shields.io/discord/390919659874156560.svg?colorB=5865f2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/q9UwaBT)
 
-Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.x support.
+Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all Minecraft versions starting with 1.7.10.
 
 > [!IMPORTANT]
 > To use FastBoard on a 1.8 server, the server must be on 1.8.8.
@@ -12,7 +12,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 ## Features
 
 * No flickering (without using a buffer)
-* Works with all versions from 1.7.10 to 1.20
+* Compatible with all Minecraft versions starting with 1.7.10
 * Small (around 750 lines of code with the JavaDoc) and no dependencies
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can directly give a string list (or array) to change all the lines
@@ -23,6 +23,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
 * [RGB HEX colors support](#rgb-colors) on 1.16 and higher
 * [Custom number formatting](#custom-number-formatting) (including blank) for scores on 1.20.3 and higher
 * [Adventure components support](#adventure-support)
+* Support for both Spigot and Mojang mappings
 
 ## Installation
 
@@ -59,7 +60,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, with 1.7.10 to 1.20.
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>2.1.2</version>
+        <version>2.1.3</version>
     </dependency>
 </dependencies>
 ```
@@ -79,7 +80,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:2.1.2'
+    implementation 'fr.mrmicky:fastboard:2.1.3'
 }
 
 shadowJar {
@@ -187,7 +188,11 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 
 For servers on modern [PaperMC](https://papermc.io) versions, FastBoard supports
 using [Adventure](https://github.com/KyoriPowered/adventure) components instead of strings,
-by using the class `fr.mrmicky.fastboard.adventure.FastBoard`.
+by using the `fr.mrmicky.fastboard.adventure.FastBoard` class.
+
+> [!WARNING]
+> With Adventure, on servers below Minecraft 1.13, lines are truncated to a maximum of 16 characters.
+> To get around this limit, upgrade to a newer version of Minecraft or use the non-Adventure version (`fr.mrmicky.fastboard.FastBoard`).
 
 ## RGB colors
 
@@ -195,8 +200,8 @@ When using the non-Adventure version of FastBoard, RGB colors can be added on 1.
 
 ## Custom number formatting
 
-For servers on Minecraft 1.20.3 and higher, FastBoard supports custom number formatting for scores.
-By default, the blank format is used, so no score is visible, but it's also possible to specify custom scores using `FastBoard#updateLine(line, text, scoreText)`,
+For servers on Minecraft 1.20.3 and above, FastBoard supports custom number formatting for scores.
+By default, it uses the blank format, so that no score is visible, but it's also possible to set custom scores using `FastBoard#updateLine(line, text, scoreText)`,
 `FastBoard#updateLines(lines, scores)` and `FastBoard#updateScore(line, text)`.
 
 Passing a `null` value as a score will result in a reset to the default blank formatting.
@@ -204,7 +209,7 @@ Passing a `null` value as a score will result in a reset to the default blank fo
 ## ViaBackwards compatibility
 
 When using ViaBackwards on a post-1.13 server with pre-1.13 clients, older clients
-might get incomplete lines. To solve this issue, you can override the method `hasLinesMaxLength()` and return `true` for older clients.
+may receive incomplete lines. To solve this problem, you can override the `hasLinesMaxLength()` method and return `true` for older clients.
 For example using the ViaVersion API:
 ```java
 FastBoard board = new FastBoard(player) {

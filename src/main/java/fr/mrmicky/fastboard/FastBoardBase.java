@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.1.2
+ * @version 2.1.3
  */
 public abstract class FastBoardBase<T> {
 
@@ -84,9 +84,11 @@ public abstract class FastBoardBase<T> {
 
             if (FastReflection.isRepackaged()) {
                 VERSION_TYPE = VersionType.V1_17;
-            } else if (FastReflection.nmsOptionalClass(null, "ScoreboardServer$Action").isPresent()) {
+            } else if (FastReflection.nmsOptionalClass(null, "ScoreboardServer$Action").isPresent()
+                    || FastReflection.nmsOptionalClass(null, "ServerScoreboard$Method").isPresent()) {
                 VERSION_TYPE = VersionType.V1_13;
-            } else if (FastReflection.nmsOptionalClass(null, "IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()) {
+            } else if (FastReflection.nmsOptionalClass(null, "IScoreboardCriteria$EnumScoreboardHealthDisplay").isPresent()
+                    || FastReflection.nmsOptionalClass(null, "ObjectiveCriteria$RenderType").isPresent()) {
                 VERSION_TYPE = VersionType.V1_8;
             } else {
                 VERSION_TYPE = VersionType.V1_7;
@@ -94,13 +96,13 @@ public abstract class FastBoardBase<T> {
 
             String gameProtocolPackage = "network.protocol.game";
             Class<?> craftPlayerClass = FastReflection.obcClass("entity.CraftPlayer");
-            Class<?> entityPlayerClass = FastReflection.nmsClass("server.level", "EntityPlayer");
-            Class<?> playerConnectionClass = FastReflection.nmsClass("server.network", "PlayerConnection");
+            Class<?> entityPlayerClass = FastReflection.nmsClass("server.level", "EntityPlayer", "ServerPlayer");
+            Class<?> playerConnectionClass = FastReflection.nmsClass("server.network", "PlayerConnection", "ServerGamePacketListenerImpl");
             Class<?> packetClass = FastReflection.nmsClass("network.protocol", "Packet");
-            Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective");
-            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective");
-            Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore");
-            Class<?> packetSbTeamClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam");
+            Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective", "ClientboundSetObjectivePacket");
+            Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective", "ClientboundSetDisplayObjectivePacket");
+            Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore", "ClientboundSetScorePacket");
+            Class<?> packetSbTeamClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam", "ClientboundSetPlayerTeamPacket");
             Class<?> sbTeamClass = VersionType.V1_17.isHigherOrEqual()
                     ? FastReflection.innerClass(packetSbTeamClass, innerClass -> !innerClass.isEnum()) : null;
             Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
@@ -113,8 +115,8 @@ public abstract class FastBoardBase<T> {
                     .filter(m -> m.getParameterCount() == 1 && m.getParameterTypes()[0] == packetClass)
                     .findFirst().orElseThrow(NoSuchMethodException::new);
             Optional<Class<?>> displaySlotEnum = FastReflection.nmsOptionalClass("world.scores", "DisplaySlot");
-            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent");
-            CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat");
+            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent","Component");
+            CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat", "ChatFormatting");
             DISPLAY_SLOT_TYPE = displaySlotEnum.orElse(int.class);
             RESET_FORMATTING = FastReflection.enumValueOf(CHAT_FORMAT_ENUM, "RESET", 21);
             SIDEBAR_DISPLAY_SLOT = displaySlotEnum.isPresent() ? FastReflection.enumValueOf(DISPLAY_SLOT_TYPE, "SIDEBAR", 1) : 1;
@@ -149,7 +151,7 @@ public abstract class FastBoardBase<T> {
                 packetSbResetScore = lookup.findConstructor(resetScoreClass, removeScoreType);
                 blankNumberFormat = blankField.isPresent() ? blankField.get().get(null) : null;
             } else if (VersionType.V1_17.isHigherOrEqual()) {
-                Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action");
+                Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action", "ServerScoreboard$Method");
                 MethodType scoreType = MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class);
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
             } else {
@@ -181,8 +183,8 @@ public abstract class FastBoardBase<T> {
                 String enumSbActionClass = VersionType.V1_13.isHigherOrEqual()
                         ? "ScoreboardServer$Action"
                         : "PacketPlayOutScoreboardScore$EnumScoreboardAction";
-                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay");
-                ENUM_SB_ACTION = FastReflection.nmsClass("server", enumSbActionClass);
+                ENUM_SB_HEALTH_DISPLAY = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay", "ObjectiveCriteria$RenderType");
+                ENUM_SB_ACTION = FastReflection.nmsClass("server", enumSbActionClass, "ServerScoreboard$Method");
                 ENUM_SB_HEALTH_DISPLAY_INTEGER = FastReflection.enumValueOf(ENUM_SB_HEALTH_DISPLAY, "INTEGER", 0);
                 ENUM_SB_ACTION_CHANGE = FastReflection.enumValueOf(ENUM_SB_ACTION, "CHANGE", 0);
                 ENUM_SB_ACTION_REMOVE = FastReflection.enumValueOf(ENUM_SB_ACTION, "REMOVE", 1);
