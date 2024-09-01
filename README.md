@@ -70,10 +70,9 @@ Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all 
 
 ### Gradle
 
-```kotlin
+```groovy
 plugins {
-    id ("java")
-    id ("com.gradleup.shadow") version "8.3.0"
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 repositories {
@@ -81,12 +80,12 @@ repositories {
 }
 
 dependencies {
-    implementation("fr.mrmicky:fastboard:2.1.3")
+    implementation 'fr.mrmicky:fastboard:2.1.3'
 }
 
-tasks.shadowJar {
-    // Replace 'com.yourpackage' with the package of your plugin
-    relocate("fr.mrmicky.fastboard", "com.yourpackage.fastboard")
+shadowJar {
+    // Replace 'com.yourpackage' with the package of your plugin 
+    relocate 'fr.mrmicky.fastboard', 'com.yourpackage.fastboard'
 }
 ```
 
