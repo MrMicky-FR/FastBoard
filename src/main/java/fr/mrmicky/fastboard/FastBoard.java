@@ -120,9 +120,11 @@ public class FastBoard extends FastBoardBase<String> {
             suffix = (addColor ? (color.isEmpty() ? ChatColor.RESET.toString() : color) : "") + suffixTmp;
         }
 
-        // Something went wrong, just cut to prevent client crash/kick
-        if (prefix.length() > maxLength) prefix = prefix.substring(0, maxLength);
-        if (suffix.length() > maxLength) suffix = suffix.substring(0, maxLength);
+        if (prefix.length() > maxLength || suffix.length() > maxLength) {
+            // Something went wrong, just cut to prevent client crash/kick
+            prefix = prefix.substring(0, Math.min(maxLength, prefix.length()));
+            suffix = suffix.substring(0, Math.min(maxLength, suffix.length()));
+        }
 
         sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
     }
