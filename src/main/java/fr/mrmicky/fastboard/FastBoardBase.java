@@ -72,14 +72,14 @@ public abstract class FastBoardBase<T> {
     private static final Class<?> DISPLAY_SLOT_TYPE;
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
     private static final Class<?> ENUM_SB_ACTION;
-    private static final Class<?> ENUM_NAME_TAG_VISIBILITY;
+    private static final Class<?> ENUM_VISIBILITY;
     private static final Class<?> ENUM_COLLISION_RULE;
     private static final Object BLANK_NUMBER_FORMAT;
     private static final Object SIDEBAR_DISPLAY_SLOT;
     private static final Object ENUM_SB_HEALTH_DISPLAY_INTEGER;
     private static final Object ENUM_SB_ACTION_CHANGE;
     private static final Object ENUM_SB_ACTION_REMOVE;
-    private static final Object ENUM_NAME_TAG_VISIBILITY_ALWAYS;
+    private static final Object ENUM_VISIBILITY_ALWAYS;
     private static final Object ENUM_COLLISION_RULE_ALWAYS;
 
     static {
@@ -170,20 +170,17 @@ public abstract class FastBoardBase<T> {
             BLANK_NUMBER_FORMAT = blankNumberFormat;
             SCORE_OPTIONAL_COMPONENTS = scoreOptionalComponents;
 
-            Object nameTagVisibilityAlways = "always";
-            Object collisionRuleAlways = "always";
-            if (sbTeamClass != null) {
-                Class<?> nameTagVisibilityClass = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumNameTagVisibility", "Team$Visibility");
-                Class<?> collisionRuleClass = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumTeamPush", "Team$CollisionRule");
-                if (Arrays.stream(sbTeamClass.getDeclaredFields()).anyMatch(field -> field.getType().equals(nameTagVisibilityClass))) { // 1.21.5+
-                    nameTagVisibilityAlways = FastReflection.enumValueOf(nameTagVisibilityClass, "ALWAYS", 0);
-                    collisionRuleAlways = FastReflection.enumValueOf(collisionRuleClass, "ALWAYS", 0);
-                }
+            if (VersionType.V1_17.isHigherOrEqual()) {
+                ENUM_VISIBILITY = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumNameTagVisibility", "Team$Visibility");
+                ENUM_COLLISION_RULE = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumTeamPush", "Team$CollisionRule");
+                ENUM_VISIBILITY_ALWAYS = FastReflection.enumValueOf(ENUM_VISIBILITY, "ALWAYS", 0);
+                ENUM_COLLISION_RULE_ALWAYS = FastReflection.enumValueOf(ENUM_COLLISION_RULE, "ALWAYS", 0);
+            } else {
+                ENUM_VISIBILITY = null;
+                ENUM_COLLISION_RULE = null;
+                ENUM_VISIBILITY_ALWAYS = null;
+                ENUM_COLLISION_RULE_ALWAYS = null;
             }
-            ENUM_NAME_TAG_VISIBILITY = nameTagVisibilityAlways.getClass();
-            ENUM_COLLISION_RULE = collisionRuleAlways.getClass();
-            ENUM_NAME_TAG_VISIBILITY_ALWAYS = nameTagVisibilityAlways;
-            ENUM_COLLISION_RULE_ALWAYS = collisionRuleAlways;
 
             for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
                 if (clazz == null) {
@@ -752,9 +749,10 @@ public abstract class FastBoardBase<T> {
             setField(team, CHAT_FORMAT_ENUM, RESET_FORMATTING); // Color
             setComponentField(team, prefix, 1); // Prefix
             setComponentField(team, suffix, 2); // Suffix
-            setField(team, ENUM_NAME_TAG_VISIBILITY, ENUM_NAME_TAG_VISIBILITY_ALWAYS, 0);
-            int collisionRuleIndex = ENUM_NAME_TAG_VISIBILITY.equals(ENUM_COLLISION_RULE) ? 1 : 0; // Separated enums for 1.21.5+
-            setField(team, ENUM_COLLISION_RULE, ENUM_COLLISION_RULE_ALWAYS, collisionRuleIndex);
+            setField(team, String.class, "always", 0); // Visibility before 1.21.5
+            setField(team, String.class, "always", 1); // Collisions before 1.21.5
+            setField(team, ENUM_VISIBILITY, ENUM_VISIBILITY_ALWAYS, 0); // 1.21.5+
+            setField(team, ENUM_COLLISION_RULE, ENUM_COLLISION_RULE_ALWAYS, 0); // 1.21.5+
             setField(packet, Optional.class, Optional.of(team));
         } else {
             setComponentField(packet, prefix, 2); // Prefix
