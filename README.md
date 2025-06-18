@@ -13,7 +13,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all 
 
 * No flickering (without using a buffer)
 * Compatible with all Minecraft versions starting with 1.7.10
-* Small (around 750 lines of code with the JavaDoc) and no dependencies
+* Small (around 750 lines of code with the Javadoc) and no dependencies
 * Easy to use
 * Dynamic scoreboard size: you don't need to add/remove lines, you can directly give a string list (or array) to change all the lines
 * Everything is at the packet level, so it works with other plugins using scoreboard and/or teams
@@ -47,7 +47,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all 
                 <relocations>
                     <relocation>
                         <pattern>fr.mrmicky.fastboard</pattern>
-                        <!-- Replace 'com.yourpackage' with the package of your plugin ! -->
+                        <!-- Replace 'com.yourpackage' with the package of your plugin -->
                         <shadedPattern>com.yourpackage.fastboard</shadedPattern>
                     </relocation>
                 </relocations>
@@ -67,6 +67,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all 
 
 > [!NOTE]
 > When using Maven, make sure to build directly with Maven and not with your IDE configuration (on IntelliJ IDEA: in the `Maven` tab on the right, in `Lifecycle`, use `package`).
+> The output jar file is located in the `target/` folder of your project.
 
 ### Gradle
 
@@ -97,7 +98,7 @@ Copy `FastBoardBase.java`, `FastBoard.java` and `FastReflection.java` in your pl
 
 ### Creating a scoreboard
 
-Simply create a new `FastBoard` and update the title and the lines:
+Create a new `FastBoard` and update the title and the lines:
 
 ```java
 FastBoard board = new FastBoard(player);
@@ -210,7 +211,7 @@ Passing a `null` value as a score will result in a reset to the default blank fo
 
 When using ViaBackwards on a post-1.13 server with pre-1.13 clients, older clients
 may receive incomplete lines. To solve this problem, you can override the `hasLinesMaxLength()` method and return `true` for older clients.
-For example using the ViaVersion API:
+For example, using the ViaVersion API:
 ```java
 FastBoard board = new FastBoard(player) {
     @Override
