@@ -28,7 +28,6 @@ import org.bukkit.Bukkit;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -134,34 +133,5 @@ public final class FastReflection {
         } catch (NoSuchMethodException e) {
             return Optional.empty();
         }
-    }
-
-    public static PacketConstructor findPacketConstructor(Class<?> packetClass, MethodHandles.Lookup lookup) throws Exception {
-        try {
-            MethodHandle constructor = lookup.findConstructor(packetClass, VOID_METHOD_TYPE);
-            return constructor::invoke;
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            // try below with Unsafe
-        }
-
-        if (theUnsafe == null) {
-            synchronized (FastReflection.class) {
-                if (theUnsafe == null) {
-                    Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-                    Field theUnsafeField = unsafeClass.getDeclaredField("theUnsafe");
-                    theUnsafeField.setAccessible(true);
-                    theUnsafe = theUnsafeField.get(null);
-                }
-            }
-        }
-
-        MethodType allocateMethodType = MethodType.methodType(Object.class, Class.class);
-        MethodHandle allocateMethod = lookup.findVirtual(theUnsafe.getClass(), "allocateInstance", allocateMethodType);
-        return () -> allocateMethod.invoke(theUnsafe, packetClass);
-    }
-
-    @FunctionalInterface
-    interface PacketConstructor {
-        Object invoke() throws Throwable;
     }
 }
