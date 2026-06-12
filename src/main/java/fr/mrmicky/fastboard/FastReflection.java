@@ -42,11 +42,8 @@ public final class FastReflection {
     private static final String OBC_PACKAGE = Bukkit.getServer().getClass().getPackage().getName();
     private static final String NMS_PACKAGE = OBC_PACKAGE.replace("org.bukkit.craftbukkit", NM_PACKAGE + ".server");
 
-    private static final MethodType VOID_METHOD_TYPE = MethodType.methodType(void.class);
     private static final boolean NMS_REPACKAGED = optionalClass(NM_PACKAGE + ".network.protocol.Packet").isPresent();
     private static final boolean MOJANG_MAPPINGS = optionalClass(NM_PACKAGE + ".network.chat.Component").isPresent();
-
-    private static volatile Object theUnsafe;
 
     private FastReflection() {
         throw new UnsupportedOperationException();
