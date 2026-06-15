@@ -793,7 +793,7 @@ public abstract class FastBoardBase<T> {
                     this.id + ':' + score, // Team name
                     mode.ordinal(), // Update mode
                     Optional.of(serializableTeam), // Serializable team
-                    Collections.emptyList() // Players
+                    mode == TeamMode.CREATE ? Collections.singletonList(COLOR_CODES[score]) : Collections.emptyList() // Players
             );
         } else {
             packet = PACKET_SB_TEAM.invoke();
@@ -803,10 +803,9 @@ public abstract class FastBoardBase<T> {
             setComponentField(packet, suffix, 3); // Suffix
             setField(packet, String.class, "always", 4); // Visibility for 1.8+
             setField(packet, String.class, "always", 5); // Collisions for 1.9+
-        }
-
-        if (mode == TeamMode.CREATE) {
-            setField(packet, Collection.class, Collections.singletonList(COLOR_CODES[score])); // Players in the team
+            if (mode == TeamMode.CREATE) {
+                setField(packet, Collection.class, Collections.singletonList(COLOR_CODES[score])); // Players in the team
+            }
         }
 
         sendPacket(packet);
