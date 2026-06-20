@@ -29,6 +29,7 @@ import org.bukkit.entity.Player;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -54,17 +55,18 @@ public abstract class FastBoardBase<T> {
     private static final VersionType VERSION_TYPE;
     // Packets and components
     private static final Class<?> CHAT_COMPONENT_CLASS;
-    private static final Class<?> CHAT_FORMAT_ENUM;
-    private static final Object RESET_FORMATTING;
     private static final MethodHandle PLAYER_CONNECTION;
     private static final MethodHandle SEND_PACKET;
     private static final MethodHandle PLAYER_GET_HANDLE;
     private static final MethodHandle FIXED_NUMBER_FORMAT;
+    // Scoreboard teams
+    private static final MethodHandle OBJECTIVE;
+    private static final MethodHandle PLAYER_TEAM;
     // Scoreboard packets
-    private static final FastReflection.PacketConstructor PACKET_SB_OBJ;
-    private static final FastReflection.PacketConstructor PACKET_SB_DISPLAY_OBJ;
-    private static final FastReflection.PacketConstructor PACKET_SB_TEAM;
-    private static final FastReflection.PacketConstructor PACKET_SB_SERIALIZABLE_TEAM;
+    private static final MethodHandle PACKET_SB_OBJ;
+    private static final MethodHandle PACKET_SB_DISPLAY_OBJ;
+    private static final MethodHandle PACKET_SB_TEAM;
+    private static final MethodHandle PACKET_SB_SERIALIZABLE_TEAM;
     private static final MethodHandle PACKET_SB_SET_SCORE;
     private static final MethodHandle PACKET_SB_RESET_SCORE;
     private static final boolean SCORE_OPTIONAL_COMPONENTS;
@@ -72,15 +74,12 @@ public abstract class FastBoardBase<T> {
     private static final Class<?> DISPLAY_SLOT_TYPE;
     private static final Class<?> ENUM_SB_HEALTH_DISPLAY;
     private static final Class<?> ENUM_SB_ACTION;
-    private static final Class<?> ENUM_VISIBILITY;
-    private static final Class<?> ENUM_COLLISION_RULE;
     private static final Object BLANK_NUMBER_FORMAT;
     private static final Object SIDEBAR_DISPLAY_SLOT;
     private static final Object ENUM_SB_HEALTH_DISPLAY_INTEGER;
     private static final Object ENUM_SB_ACTION_CHANGE;
     private static final Object ENUM_SB_ACTION_REMOVE;
-    private static final Object ENUM_VISIBILITY_ALWAYS;
-    private static final Object ENUM_COLLISION_RULE_ALWAYS;
+    private static final Object DUMMY_SCOREBOARD_CRITERIA;
 
     static {
         try {
@@ -119,16 +118,20 @@ public abstract class FastBoardBase<T> {
                     .filter(m -> m.getParameterCount() == 1 && m.getParameterTypes()[0] == packetClass)
                     .findFirst().orElseThrow(NoSuchMethodException::new);
             Optional<Class<?>> displaySlotEnum = FastReflection.nmsOptionalClass("world.scores", "DisplaySlot");
-            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent","Component");
-            CHAT_FORMAT_ENUM = FastReflection.nmsClass(null, "EnumChatFormat", "ChatFormatting");
+            CHAT_COMPONENT_CLASS = FastReflection.nmsClass("network.chat", "IChatBaseComponent", "Component");
             DISPLAY_SLOT_TYPE = displaySlotEnum.orElse(int.class);
-            RESET_FORMATTING = FastReflection.enumValueOf(CHAT_FORMAT_ENUM, "RESET", 21);
             SIDEBAR_DISPLAY_SLOT = displaySlotEnum.isPresent() ? FastReflection.enumValueOf(DISPLAY_SLOT_TYPE, "SIDEBAR", 1) : 1;
             PLAYER_GET_HANDLE = lookup.findVirtual(craftPlayerClass, "getHandle", MethodType.methodType(entityPlayerClass));
             PLAYER_CONNECTION = lookup.unreflectGetter(playerConnectionField);
             SEND_PACKET = lookup.unreflect(sendPacketMethod);
-            PACKET_SB_OBJ = FastReflection.findPacketConstructor(packetSbObjClass, lookup);
-            PACKET_SB_DISPLAY_OBJ = FastReflection.findPacketConstructor(packetSbDisplayObjClass, lookup);
+
+            Class<?> scoreboardClass = FastReflection.nmsClass("world.scores", "Scoreboard");
+            Class<?> playerTeamClass = FastReflection.nmsClass("world.scores", "ScoreboardTeam", "PlayerTeam");
+            Class<?> objectiveClass = FastReflection.nmsClass("world.scores", "ScoreboardObjective", "Objective");
+            Class<?> objectiveCriteriaClass = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria", "ObjectiveCriteria");
+            PLAYER_TEAM = lookup.unreflectConstructor(playerTeamClass.getConstructor(scoreboardClass, String.class));
+
+            Class<?> objectiveRenderTypeClass = FastReflection.nmsOptionalClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay", "ObjectiveCriteria$RenderType").orElse(null);
 
             Optional<Class<?>> numberFormat = FastReflection.nmsOptionalClass("network.chat.numbers", "NumberFormat");
             MethodHandle packetSbSetScore;
@@ -138,6 +141,10 @@ public abstract class FastBoardBase<T> {
             boolean scoreOptionalComponents = false;
 
             if (numberFormat.isPresent()) { // 1.20.3
+                OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass, boolean.class, numberFormat.get()));
+                PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
+                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(DISPLAY_SLOT_TYPE, objectiveClass));
+
                 Class<?> blankFormatClass = FastReflection.nmsClass("network.chat.numbers", "BlankFormat");
                 Class<?> fixedFormatClass = FastReflection.nmsClass("network.chat.numbers", "FixedFormat");
                 Class<?> resetScoreClass = FastReflection.nmsClass(gameProtocolPackage, "ClientboundResetScorePacket");
@@ -158,31 +165,31 @@ public abstract class FastBoardBase<T> {
                 Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action", "ServerScoreboard$Method");
                 MethodType scoreType = MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class);
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
+                OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
+                PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
+                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
             } else {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
+                if (VersionType.V1_13.isHigherOrEqual()) {
+                    OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
+                } else {
+                    OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass));
+                }
+                PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
+                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
             }
 
             PACKET_SB_SET_SCORE = packetSbSetScore;
             PACKET_SB_RESET_SCORE = packetSbResetScore;
-            PACKET_SB_TEAM = FastReflection.findPacketConstructor(packetSbTeamClass, lookup);
-            PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass != null ? FastReflection.findPacketConstructor(sbTeamClass, lookup) : null;
+            Constructor<?> packetSbTeamConstructor = sbTeamClass != null ? packetSbTeamClass.getDeclaredConstructor(String.class, int.class, Optional.class, Collection.class) : packetSbTeamClass.getDeclaredConstructor();
+            packetSbTeamConstructor.setAccessible(true);
+            PACKET_SB_TEAM = lookup.unreflectConstructor(packetSbTeamConstructor);
+            PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass != null ? lookup.unreflectConstructor(sbTeamClass.getConstructor(playerTeamClass)) : null;
             FIXED_NUMBER_FORMAT = fixedFormatConstructor;
             BLANK_NUMBER_FORMAT = blankNumberFormat;
             SCORE_OPTIONAL_COMPONENTS = scoreOptionalComponents;
 
-            if (VersionType.V1_17.isHigherOrEqual()) {
-                ENUM_VISIBILITY = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumNameTagVisibility", "Team$Visibility");
-                ENUM_COLLISION_RULE = FastReflection.nmsClass("world.scores", "ScoreboardTeamBase$EnumTeamPush", "Team$CollisionRule");
-                ENUM_VISIBILITY_ALWAYS = FastReflection.enumValueOf(ENUM_VISIBILITY, "ALWAYS", 0);
-                ENUM_COLLISION_RULE_ALWAYS = FastReflection.enumValueOf(ENUM_COLLISION_RULE, "ALWAYS", 0);
-            } else {
-                ENUM_VISIBILITY = null;
-                ENUM_COLLISION_RULE = null;
-                ENUM_VISIBILITY_ALWAYS = null;
-                ENUM_COLLISION_RULE_ALWAYS = null;
-            }
-
-            for (Class<?> clazz : Arrays.asList(packetSbObjClass, packetSbDisplayObjClass, packetSbScoreClass, packetSbTeamClass, sbTeamClass)) {
+            for (Class<?> clazz : Arrays.asList(packetSbScoreClass, packetSbTeamClass, sbTeamClass, playerTeamClass, objectiveClass)) {
                 if (clazz == null) {
                     continue;
                 }
@@ -211,6 +218,11 @@ public abstract class FastBoardBase<T> {
                 ENUM_SB_ACTION_CHANGE = null;
                 ENUM_SB_ACTION_REMOVE = null;
             }
+            if (VersionType.V1_13.isHigherOrEqual()) {
+                DUMMY_SCOREBOARD_CRITERIA = null;
+            } else {
+                DUMMY_SCOREBOARD_CRITERIA = FastReflection.nmsClass("world.scores.criteria", "ScoreboardBaseCriteria").getConstructor(String.class).newInstance("dummy");
+            }
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }
@@ -235,8 +247,8 @@ public abstract class FastBoardBase<T> {
         this.id = "fb-" + Integer.toHexString(ThreadLocalRandom.current().nextInt());
 
         try {
-            sendObjectivePacket(ObjectiveMode.CREATE);
-            sendDisplayObjectivePacket();
+            Object objective = sendObjectivePacket(ObjectiveMode.CREATE);
+            sendDisplayObjectivePacket(objective);
         } catch (Throwable t) {
             throw new RuntimeException("Unable to create scoreboard", t);
         }
@@ -641,32 +653,53 @@ public abstract class FastBoardBase<T> {
         return score < lines.size() ? lines.get(lines.size() - score - 1) : null;
     }
 
-    protected void sendObjectivePacket(ObjectiveMode mode) throws Throwable {
-        Object packet = PACKET_SB_OBJ.invoke();
-
-        setField(packet, String.class, this.id);
-        setField(packet, int.class, mode.ordinal());
-
-        if (mode != ObjectiveMode.REMOVE) {
-            setComponentField(packet, this.title, 1);
-            setField(packet, Optional.class, Optional.empty()); // Number format for 1.20.5+, previously nullable
-
-            if (VersionType.V1_8.isHigherOrEqual()) {
-                setField(packet, ENUM_SB_HEALTH_DISPLAY, ENUM_SB_HEALTH_DISPLAY_INTEGER);
-            }
-        } else if (VERSION_TYPE == VersionType.V1_7) {
-            setField(packet, String.class, "", 1);
+    protected Object sendObjectivePacket(ObjectiveMode mode) throws Throwable {
+        Object objective;
+        if (BLANK_NUMBER_FORMAT != null) {
+            objective = OBJECTIVE.invoke(
+                    null, // Scoreboard, unused
+                    this.id, // Objective name
+                    null, // Criteria, unused
+                    toMinecraftComponent(this.title), // Display name
+                    ENUM_SB_HEALTH_DISPLAY_INTEGER, // Render type
+                    false, // Auto-update, unused
+                    null // Number format
+            );
+        } else if (VersionType.V1_17.isHigherOrEqual()) {
+            objective = OBJECTIVE.invoke(
+                    null, // Scoreboard, unused
+                    this.id, // Objective name
+                    null, // Criteria, unused
+                    toMinecraftComponent(this.title), // Display name
+                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
+            );
+        } else if (VersionType.V1_13.isHigherOrEqual()) {
+            objective = OBJECTIVE.invoke(
+                    null, // Scoreboard, unused
+                    this.id, // Objective name
+                    null, // Criteria, unused
+                    toMinecraftComponent(this.title), // Display name
+                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
+            );
+        } else {
+            objective = OBJECTIVE.invoke(
+                    null, // Scoreboard, unused
+                    this.id, // Objective name
+                    DUMMY_SCOREBOARD_CRITERIA // Criteria
+            );
+            setComponentField(objective, this.title, 1);
         }
 
+        Object packet = PACKET_SB_OBJ.invoke(objective, mode.ordinal());
         sendPacket(packet);
+        return objective;
     }
 
-    protected void sendDisplayObjectivePacket() throws Throwable {
-        Object packet = PACKET_SB_DISPLAY_OBJ.invoke();
-
-        setField(packet, DISPLAY_SLOT_TYPE, SIDEBAR_DISPLAY_SLOT); // Position
-        setField(packet, String.class, this.id); // Score Name
-
+    protected void sendDisplayObjectivePacket(Object objective) throws Throwable {
+        Object packet = PACKET_SB_DISPLAY_OBJ.invoke(
+                SIDEBAR_DISPLAY_SLOT, // Position
+                objective // Score Name
+        );
         sendPacket(packet);
     }
 
@@ -732,37 +765,47 @@ public abstract class FastBoardBase<T> {
             throw new UnsupportedOperationException();
         }
 
-        Object packet = PACKET_SB_TEAM.invoke();
-
-        setField(packet, String.class, this.id + ':' + score); // Team name
-        setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
-
+        Object packet;
         if (mode == TeamMode.REMOVE) {
+            if (VersionType.V1_17.isHigherOrEqual()) {
+                packet = PACKET_SB_TEAM.invoke(
+                        this.id + ':' + score, // Team name
+                        mode.ordinal(), // Update mode
+                        Optional.empty(), // Serializable team, unused
+                        Collections.emptyList() // Players
+                );
+            } else {
+                packet = PACKET_SB_TEAM.invoke();
+                setField(packet, String.class, this.id + ':' + score); // Team name
+                setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
+            }
             sendPacket(packet);
             return;
         }
 
         if (VersionType.V1_17.isHigherOrEqual()) {
-            Object team = PACKET_SB_SERIALIZABLE_TEAM.invoke();
-            // Since the packet is initialized with null values, we need to change more things.
-            setComponentField(team, null, 0); // Display name
-            setField(team, CHAT_FORMAT_ENUM, RESET_FORMATTING); // Color
-            setComponentField(team, prefix, 1); // Prefix
-            setComponentField(team, suffix, 2); // Suffix
-            setField(team, String.class, "always", 0); // Visibility before 1.21.5
-            setField(team, String.class, "always", 1); // Collisions before 1.21.5
-            setField(team, ENUM_VISIBILITY, ENUM_VISIBILITY_ALWAYS, 0); // 1.21.5+
-            setField(team, ENUM_COLLISION_RULE, ENUM_COLLISION_RULE_ALWAYS, 0); // 1.21.5+
-            setField(packet, Optional.class, Optional.of(team));
+            Object team = PLAYER_TEAM.invoke(null, this.id + ':' + score);
+            setComponentField(team, null, 1); // Display name
+            setComponentField(team, prefix, 2); // Prefix
+            setComponentField(team, suffix, 3); // Suffix
+            Object serializableTeam = PACKET_SB_SERIALIZABLE_TEAM.invoke(team);
+            packet = PACKET_SB_TEAM.invoke(
+                    this.id + ':' + score, // Team name
+                    mode.ordinal(), // Update mode
+                    Optional.of(serializableTeam), // Serializable team
+                    mode == TeamMode.CREATE ? Collections.singletonList(COLOR_CODES[score]) : Collections.emptyList() // Players
+            );
         } else {
+            packet = PACKET_SB_TEAM.invoke();
+            setField(packet, String.class, this.id + ':' + score); // Team name
+            setField(packet, int.class, mode.ordinal(), VERSION_TYPE == VersionType.V1_8 ? 1 : 0); // Update mode
             setComponentField(packet, prefix, 2); // Prefix
             setComponentField(packet, suffix, 3); // Suffix
             setField(packet, String.class, "always", 4); // Visibility for 1.8+
             setField(packet, String.class, "always", 5); // Collisions for 1.9+
-        }
-
-        if (mode == TeamMode.CREATE) {
-            setField(packet, Collection.class, Collections.singletonList(COLOR_CODES[score])); // Players in the team
+            if (mode == TeamMode.CREATE) {
+                setField(packet, Collection.class, Collections.singletonList(COLOR_CODES[score])); // Players in the team
+            }
         }
 
         sendPacket(packet);
