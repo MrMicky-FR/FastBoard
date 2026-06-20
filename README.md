@@ -60,7 +60,7 @@ Lightweight packet-based scoreboard API for Bukkit plugins, compatible with all 
     <dependency>
         <groupId>fr.mrmicky</groupId>
         <artifactId>fastboard</artifactId>
-        <version>2.1.5</version>
+        <version>2.2.0</version>
     </dependency>
 </dependencies>
 ```
@@ -81,7 +81,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'fr.mrmicky:fastboard:2.1.5'
+    implementation 'fr.mrmicky:fastboard:2.2.0'
 }
 
 shadowJar {

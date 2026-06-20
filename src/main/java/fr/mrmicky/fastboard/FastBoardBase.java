@@ -1,7 +1,7 @@
 /*
  * This file is part of FastBoard, licensed under the MIT License.
  *
- * Copyright (c) 2019-2023 MrMicky
+ * Copyright (c) 2019-2026 MrMicky
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,12 +39,12 @@ import java.util.stream.Stream;
 
 /**
  * Lightweight packet-based scoreboard API for Bukkit plugins.
- * It can be safely used asynchronously as everything is at packet level.
+ * It can be safely used asynchronously because everything is handled at the packet level.
  * <p>
  * The project is on <a href="https://github.com/MrMicky-FR/FastBoard">GitHub</a>.
  *
  * @author MrMicky
- * @version 2.1.5
+ * @version 2.2.0
  */
 public abstract class FastBoardBase<T> {
 
@@ -235,7 +235,7 @@ public abstract class FastBoardBase<T> {
     private final List<T> scores = new ArrayList<>();
     private T title = emptyLine();
 
-    private boolean deleted = false;
+    private volatile boolean deleted = false;
 
     /**
      * Creates a new FastBoard.
@@ -255,22 +255,21 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get the scoreboard title.
+     * Returns the scoreboard title.
      *
      * @return the scoreboard title
      */
-    public T getTitle() {
+    public synchronized T getTitle() {
         return this.title;
     }
 
     /**
-     * Update the scoreboard title.
+     * Updates the scoreboard title.
      *
      * @param title the new scoreboard title
      * @throws IllegalArgumentException if the title is longer than 32 chars on 1.12 or lower
-     * @throws IllegalStateException    if {@link #delete()} was call before
      */
-    public void updateTitle(T title) {
+    public synchronized void updateTitle(T title) {
         if (this.title.equals(Objects.requireNonNull(title, "title"))) {
             return;
         }
@@ -285,66 +284,66 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get the scoreboard lines.
+     * Returns the scoreboard lines.
      *
      * @return the scoreboard lines
      */
-    public List<T> getLines() {
+    public synchronized List<T> getLines() {
         return new ArrayList<>(this.lines);
     }
 
     /**
-     * Get the specified scoreboard line.
+     * Returns the specified scoreboard line.
      *
      * @param line the line number
      * @return the line
-     * @throws IndexOutOfBoundsException if the line is higher than {@code size}
+     * @throws IllegalArgumentException if the line number is out of range
      */
-    public T getLine(int line) {
+    public synchronized T getLine(int line) {
         checkLineNumber(line, true, false);
 
         return this.lines.get(line);
     }
 
     /**
-     * Get how a specific line's score is displayed. On 1.20.2 or below, the value returned isn't used.
+     * Returns how a specific line's score is displayed. On 1.20.2 or below, the value returned isn't used.
      *
      * @param line the line number
      * @return the text of how the line is displayed
-     * @throws IndexOutOfBoundsException if the line is higher than {@code size}
+     * @throws IllegalArgumentException if the line number is out of range
      */
-    public Optional<T> getScore(int line) {
+    public synchronized Optional<T> getScore(int line) {
         checkLineNumber(line, true, false);
 
         return Optional.ofNullable(this.scores.get(line));
     }
 
     /**
-     * Update a single scoreboard line.
+     * Updates a single scoreboard line.
      *
-     * @param line the line number
-     * @param text the new line text
-     * @throws IndexOutOfBoundsException if the line is higher than {@link #size() size() + 1}
+     * @param line  the line number
+     * @param score the new line text
+     * @throws IllegalArgumentException if the line number is out of range
      */
-    public synchronized void updateLine(int line, T text) {
-        updateLine(line, text, null);
+    public synchronized void updateLine(int line, T score) {
+        updateLine(line, score, null);
     }
 
     /**
-     * Update a single scoreboard line including how its score is displayed.
+     * Updates a single scoreboard line including how its score is displayed.
      * The score will only be displayed on 1.20.3 and higher.
      *
-     * @param line the line number
-     * @param text the new line text
-     * @param scoreText the new line's score, if null will not change current value
-     * @throws IndexOutOfBoundsException if the line is higher than {@link #size() size() + 1}
+     * @param line      the line number
+     * @param score     the new line text
+     * @param scoreText the new line score, or null to use the default blank score
+     * @throws IllegalArgumentException if the line number is out of range
      */
-    public synchronized void updateLine(int line, T text, T scoreText) {
+    public synchronized void updateLine(int line, T score, T scoreText) {
         checkLineNumber(line, false, false);
 
         try {
             if (line < size()) {
-                this.lines.set(line, text);
+                this.lines.set(line, score);
                 this.scores.set(line, scoreText);
 
                 sendLineChange(getScoreByLine(line));
@@ -366,7 +365,7 @@ public abstract class FastBoardBase<T> {
                 }
             }
 
-            newLines.add(text);
+            newLines.add(score);
             newScores.add(scoreText);
 
             updateLines(newLines, newScores);
@@ -376,7 +375,7 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Remove a scoreboard line.
+     * Removes a scoreboard line.
      *
      * @param line the line number
      */
@@ -395,36 +394,36 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Update all the scoreboard lines.
+     * Updates all the scoreboard lines.
      *
      * @param lines the new lines
      * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public void updateLines(T... lines) {
         updateLines(Arrays.asList(lines));
     }
 
     /**
-     * Update the lines of the scoreboard
+     * Updates the lines of the scoreboard.
      *
      * @param lines the new scoreboard lines
      * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLines(Collection<T> lines) {
         updateLines(lines, null);
     }
 
     /**
-     * Update the lines and how their score is displayed on the scoreboard.
+     * Updates the lines and how their score is displayed on the scoreboard.
      * The scores will only be displayed for servers on 1.20.3 and higher.
      *
-     * @param lines the new scoreboard lines
-     * @param scores the set for how each line's score should be, if null will fall back to default (blank)
+     * @param lines  the new scoreboard lines
+     * @param scores the custom score text for each line, or null to use the default blank scores
      * @throws IllegalArgumentException if one line is longer than 30 chars on 1.12 or lower
      * @throws IllegalArgumentException if lines and scores are not the same size
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLines(Collection<T> lines, Collection<T> scores) {
         Objects.requireNonNull(lines, "lines");
@@ -476,18 +475,18 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Update how a specified line's score is displayed on the scoreboard. A null value will reset the displayed
+     * Updates how a specified line's score is displayed on the scoreboard. A null value will reset the displayed
      * text back to default. The scores will only be displayed for servers on 1.20.3 and higher.
      *
-     * @param line the line number
-     * @param text the text to be displayed as the score. if null, no score will be displayed
+     * @param line  the line number
+     * @param score the new line score, or null to use the default blank score
      * @throws IllegalArgumentException if the line number is not in range
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
-    public synchronized void updateScore(int line, T text) {
+    public synchronized void updateScore(int line, T score) {
         checkLineNumber(line, true, false);
 
-        this.scores.set(line, text);
+        this.scores.set(line, score);
 
         try {
             if (customScoresSupported()) {
@@ -499,44 +498,44 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Reset a line's score back to default (blank). The score will only be displayed for servers on 1.20.3 and higher.
+     * Resets a line's score back to default (blank). The score will only be displayed for servers on 1.20.3 and higher.
      *
      * @param line the line number
      * @throws IllegalArgumentException if the line number is not in range
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void removeScore(int line) {
         updateScore(line, null);
     }
 
     /**
-     * Update how all lines' scores are displayed. A value of null will reset the displayed text back to default.
+     * Updates how all lines' scores are displayed. A value of null will reset the displayed text back to default.
      * The scores will only be displayed for servers on 1.20.3 and higher.
      *
-     * @param texts the set of texts to be displayed as the scores
+     * @param scores the custom score texts for the lines, or null to use the default blank scores
      * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
-    public synchronized void updateScores(T... texts) {
-        updateScores(Arrays.asList(texts));
+    public synchronized void updateScores(T... scores) {
+        updateScores(Arrays.asList(scores));
     }
 
     /**
-     * Update how all lines' scores are displayed.  A null value will reset the displayed
+     * Updates how all lines' scores are displayed. A null value will reset the displayed
      * text back to default (blank). Only available on 1.20.3+ servers.
      *
-     * @param texts the set of texts to be displayed as the scores
+     * @param scores the set of texts to be displayed as the scores
      * @throws IllegalArgumentException if the size of the texts does not match the current size of the board
-     * @throws IllegalStateException    if {@link #delete()} was call before
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
-    public synchronized void updateScores(Collection<T> texts) {
-        Objects.requireNonNull(texts, "texts");
+    public synchronized void updateScores(Collection<T> scores) {
+        Objects.requireNonNull(scores, "scores");
 
-        if (this.scores.size() != this.lines.size()) {
+        if (scores.size() != this.lines.size()) {
             throw new IllegalArgumentException("The size of the scores must match the size of the board");
         }
 
-        List<T> newScores = new ArrayList<>(texts);
+        List<T> newScores = new ArrayList<>(scores);
         for (int i = 0; i < this.scores.size(); i++) {
             if (Objects.equals(this.scores.get(i), newScores.get(i))) {
                 continue;
@@ -555,7 +554,7 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get the player who has the scoreboard.
+     * Returns the player who has the scoreboard.
      *
      * @return current player for this FastBoard
      */
@@ -564,7 +563,7 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get the scoreboard id.
+     * Returns the scoreboard ID.
      *
      * @return the id
      */
@@ -573,7 +572,7 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get if the scoreboard is deleted.
+     * Returns whether this FastBoard has been deleted.
      *
      * @return true if the scoreboard is deleted
      */
@@ -582,7 +581,7 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get if the server supports custom scoreboard scores (1.20.3+ servers only).
+     * Returns whether the server supports custom scoreboard scores (1.20.3+ servers only).
      *
      * @return true if the server supports custom scores
      */
@@ -591,21 +590,23 @@ public abstract class FastBoardBase<T> {
     }
 
     /**
-     * Get the scoreboard size (the number of lines).
+     * Returns the scoreboard size (the number of lines).
      *
      * @return the size
      */
-    public int size() {
+    public synchronized int size() {
         return this.lines.size();
     }
 
     /**
-     * Delete this FastBoard, and will remove the scoreboard for the associated player if he is online.
-     * After this, all uses of {@link #updateLines} and {@link #updateTitle} will throw an {@link IllegalStateException}
-     *
-     * @throws IllegalStateException if this was already call before
+     * Deletes this FastBoard and removes the scoreboard from the associated player if they are online.
+     * After deletion, all scoreboard update methods will throw an {@link IllegalStateException}.
      */
-    public void delete() {
+    public synchronized void delete() {
+        if (this.deleted) {
+            return;
+        }
+
         try {
             for (int i = 0; i < this.lines.size(); i++) {
                 sendTeamPacket(i, TeamMode.REMOVE);
@@ -636,7 +637,7 @@ public abstract class FastBoardBase<T> {
             throw new IllegalArgumentException("Line number must be under " + this.lines.size());
         }
 
-        if (checkMax && line >= COLOR_CODES.length - 1) {
+        if (checkMax && line >= COLOR_CODES.length) {
             throw new IllegalArgumentException("Line number is too high: " + line);
         }
     }
