@@ -167,9 +167,7 @@ public abstract class FastBoardBase<T> {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
                 OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
                 PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
-                PACKET_SB_DISPLAY_OBJ = displaySlotEnum.isPresent()
-                        ? lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.get(), objectiveClass))
-                        : lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
+                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.orElse(int.class), objectiveClass));
             } else {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
                 if (VersionType.V1_13.isHigherOrEqual()) {
