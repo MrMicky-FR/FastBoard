@@ -38,6 +38,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static fr.mrmicky.fastboard.FastReflection.optionalClass;
+
 /**
  * Lightweight packet-based scoreboard API for Bukkit plugins.
  * It can be safely used asynchronously because everything is handled at the packet level.
@@ -88,13 +90,9 @@ public abstract class FastBoardBase<T> {
     private static MethodHandle SET_DISPLAY_NAME_RAW = null;
 
     // method to check if we are on a canvas server
+    private static final boolean CANVAS_PRESENT = optionalClass("io.canvasmc.canvas.util.LockedReference").isPresent();
     private static boolean isCanvas() {
-        try {
-            Class.forName("io.canvasmc.canvas.util.LockedReference");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
+        return CANVAS_PRESENT;
     }
 
     static {
