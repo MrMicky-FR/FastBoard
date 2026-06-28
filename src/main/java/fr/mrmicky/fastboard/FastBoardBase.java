@@ -881,22 +881,19 @@ public abstract class FastBoardBase<T> {
 
     private void setComponentField(Object packet, T value, int count) throws Throwable {
         Class<?> packetClass = packet.getClass();
-        String className = packetClass.getSimpleName();
+        String className = packet.getClass().getSimpleName();
 
-        // Canvas has changed the way scoreboard teams work, so we need to use reflection to find the methods that set the raw component fields
-        if (className.equals("PlayerTeam") || className.equals("ScoreboardTeam")) {
-            if (isCanvas()) {
-                Object component = toMinecraftComponent(value);
-                if (count == 1) {
-                    SET_DISPLAY_NAME_RAW.invoke(packet, component);
-                    return;
-                } else if (count == 2) {
-                    SET_PLAYER_PREFIX_RAW.invoke(packet, component);
-                    return;
-                } else if (count == 3) {
-                    SET_PLAYER_SUFFIX_RAW.invoke(packet, component);
-                    return;
-                }
+        if (isCanvas() && (className.equals("PlayerTeam") || className.equals("ScoreboardTeam"))) {
+            Object component = toMinecraftComponent(value);
+            if (count == 1) {
+                SET_DISPLAY_NAME_RAW.invoke(packet, component);
+                return;
+            } else if (count == 2) {
+                SET_PLAYER_PREFIX_RAW.invoke(packet, component);
+                return;
+            } else if (count == 3) {
+                SET_PLAYER_SUFFIX_RAW.invoke(packet, component);
+                return;
             }
         }
 
