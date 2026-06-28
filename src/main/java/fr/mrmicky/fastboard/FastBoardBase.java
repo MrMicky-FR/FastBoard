@@ -85,7 +85,9 @@ public abstract class FastBoardBase<T> {
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
-            if (FastReflection.isRepackaged()) {
+            if (FastReflection.optionalClass("org.bukkit.damage.DamageSource").isPresent()) {
+                VERSION_TYPE = VersionType.V1_20_4;
+            } else if (FastReflection.isRepackaged()) {
                 VERSION_TYPE = VersionType.V1_17;
             } else if (FastReflection.nmsOptionalClass(null, "ScoreboardServer$Action").isPresent()
                     || FastReflection.nmsOptionalClass(null, "ServerScoreboard$Method").isPresent()) {
@@ -167,7 +169,9 @@ public abstract class FastBoardBase<T> {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
                 OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
                 PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
-                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
+                PACKET_SB_DISPLAY_OBJ = displaySlotEnum.isPresent()
+                        ? lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.get(), objectiveClass))
+                        : lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
             } else {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
                 if (VersionType.V1_13.isHigherOrEqual()) {
@@ -449,14 +453,18 @@ public abstract class FastBoardBase<T> {
 
                 if (oldLines.size() > linesSize) {
                     for (int i = oldLinesCopy.size(); i > linesSize; i--) {
-                        sendTeamPacket(i - 1, TeamMode.REMOVE);
+                        if (!VersionType.V1_20_4.isHigherOrEqual()) {
+                            sendTeamPacket(i - 1, TeamMode.REMOVE);
+                        }
                         sendScorePacket(i - 1, ScoreboardAction.REMOVE);
                         oldLines.remove(0);
                     }
                 } else {
                     for (int i = oldLinesCopy.size(); i < linesSize; i++) {
                         sendScorePacket(i, ScoreboardAction.CHANGE);
-                        sendTeamPacket(i, TeamMode.CREATE, null, null);
+                        if (!VersionType.V1_20_4.isHigherOrEqual()) {
+                            sendTeamPacket(i, TeamMode.CREATE, null, null);
+                        }
                     }
                 }
             }
@@ -609,7 +617,11 @@ public abstract class FastBoardBase<T> {
 
         try {
             for (int i = 0; i < this.lines.size(); i++) {
-                sendTeamPacket(i, TeamMode.REMOVE);
+                if (VersionType.V1_20_4.isHigherOrEqual()) {
+                    sendScorePacket(i, ScoreboardAction.REMOVE);
+                } else {
+                    sendTeamPacket(i, TeamMode.REMOVE);
+                }
             }
 
             sendObjectivePacket(ObjectiveMode.REMOVE);
@@ -665,6 +677,14 @@ public abstract class FastBoardBase<T> {
                     ENUM_SB_HEALTH_DISPLAY_INTEGER, // Render type
                     false, // Auto-update, unused
                     null // Number format
+            );
+        } else if (VersionType.V1_20_4.isHigherOrEqual()) {
+            objective = OBJECTIVE.invoke(
+                    null, // Scoreboard, unused
+                    this.id, // Objective name
+                    null, // Criteria, unused
+                    toMinecraftComponent(this.title), // Display name
+                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
             );
         } else if (VersionType.V1_17.isHigherOrEqual()) {
             objective = OBJECTIVE.invoke(
@@ -745,13 +765,14 @@ public abstract class FastBoardBase<T> {
             return;
         }
 
+        T text = getLineByScore(score);
         T scoreFormat = getLineByScore(this.scores, score);
         Object format = scoreFormat != null
                 ? FIXED_NUMBER_FORMAT.invoke(toMinecraftComponent(scoreFormat))
                 : BLANK_NUMBER_FORMAT;
         Object scorePacket = SCORE_OPTIONAL_COMPONENTS
-                ? PACKET_SB_SET_SCORE.invoke(objName, this.id, score, Optional.empty(), Optional.of(format))
-                : PACKET_SB_SET_SCORE.invoke(objName, this.id, score, null, format);
+                ? PACKET_SB_SET_SCORE.invoke(objName, this.id, score, Optional.of(toMinecraftComponent(text)), Optional.of(format))
+                : PACKET_SB_SET_SCORE.invoke(objName, this.id, score, toMinecraftComponent(text), format);
 
         sendPacket(scorePacket);
     }
@@ -866,8 +887,8 @@ public abstract class FastBoardBase<T> {
         CHANGE, REMOVE
     }
 
-    enum VersionType {
-        V1_7, V1_8, V1_13, V1_17;
+    public enum VersionType {
+        V1_7, V1_8, V1_13, V1_17, V1_20_4;
 
         public boolean isHigherOrEqual() {
             return VERSION_TYPE.ordinal() >= ordinal();
