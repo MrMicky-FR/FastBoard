@@ -908,12 +908,10 @@ public abstract class FastBoardBase<T> {
 
         int i = 0;
         Field[] fields = PACKETS.get(packetClass);
-        if (fields != null) {
-            for (Field field : fields) {
-                if ((field.getType() == String.class || field.getType() == CHAT_COMPONENT_CLASS) && count == i++) {
-                    field.set(packet, toMinecraftComponent(value));
-                    break;
-                }
+        for (Field field : fields) {
+            if ((field.getType() == String.class || field.getType() == CHAT_COMPONENT_CLASS) && count == i++) {
+                field.set(packet, toMinecraftComponent(value));
+                break;
             }
         }
     }
