@@ -678,22 +678,6 @@ public abstract class FastBoardBase<T> {
                     false, // Auto-update, unused
                     null // Number format
             );
-        } else if (VersionType.V1_20_4.isHigherOrEqual()) {
-            objective = OBJECTIVE.invoke(
-                    null, // Scoreboard, unused
-                    this.id, // Objective name
-                    null, // Criteria, unused
-                    toMinecraftComponent(this.title), // Display name
-                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
-            );
-        } else if (VersionType.V1_17.isHigherOrEqual()) {
-            objective = OBJECTIVE.invoke(
-                    null, // Scoreboard, unused
-                    this.id, // Objective name
-                    null, // Criteria, unused
-                    toMinecraftComponent(this.title), // Display name
-                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
-            );
         } else if (VersionType.V1_13.isHigherOrEqual()) {
             objective = OBJECTIVE.invoke(
                     null, // Scoreboard, unused
