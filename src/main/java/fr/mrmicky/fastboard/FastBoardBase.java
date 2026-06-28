@@ -881,7 +881,7 @@ public abstract class FastBoardBase<T> {
 
     private void setComponentField(Object packet, T value, int count) throws Throwable {
         Class<?> packetClass = packet.getClass();
-        String className = packet.getClass().getSimpleName();
+        String className = packetClass.getSimpleName();
 
         if (isCanvas() && (className.equals("PlayerTeam") || className.equals("ScoreboardTeam"))) {
             Object component = toMinecraftComponent(value);
