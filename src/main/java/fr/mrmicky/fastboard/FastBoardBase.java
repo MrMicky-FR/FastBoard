@@ -83,9 +83,9 @@ public abstract class FastBoardBase<T> {
     private static final Object DUMMY_SCOREBOARD_CRITERIA;
 
     // handles for methods that set the raw component fields of a scoreboard team. canvas only
-    private static final MethodHandle SET_PLAYER_SUFFIX_RAW;
-    private static final MethodHandle SET_PLAYER_PREFIX_RAW;
-    private static final MethodHandle SET_DISPLAY_NAME_RAW;
+    private static MethodHandle SET_PLAYER_SUFFIX_RAW = null;
+    private static MethodHandle SET_PLAYER_PREFIX_RAW = null;
+    private static MethodHandle SET_DISPLAY_NAME_RAW = null;
 
     // method to check if we are on a canvas server
     private static boolean isCanvas() {
@@ -147,29 +147,31 @@ public abstract class FastBoardBase<T> {
             Class<?> objectiveCriteriaClass = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria", "ObjectiveCriteria");
             PLAYER_TEAM = lookup.unreflectConstructor(playerTeamClass.getConstructor(scoreboardClass, String.class));
 
-            // Canvas has changed the way scoreboard teams work, so we need to use reflection to find the methods that set the raw component fields
-            List<Method> teamMethods = Stream.concat(
-                    Arrays.stream(playerTeamClass.getSuperclass().getDeclaredMethods()),
-                    Arrays.stream(playerTeamClass.getDeclaredMethods())
-            ).collect(Collectors.toList());
+            if (isCanvas()) {
+                // Canvas has changed the way scoreboard teams work, so we need to use reflection to find the methods that set the raw component fields
+                List<Method> teamMethods = Stream.concat(
+                        Arrays.stream(playerTeamClass.getSuperclass().getDeclaredMethods()),
+                        Arrays.stream(playerTeamClass.getDeclaredMethods())
+                ).collect(Collectors.toList());
 
-            Method setDisplayNameRaw = teamMethods.stream()
-                    .filter(m -> m.getName().equals("setDisplayNameRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
-                    .findFirst().orElseThrow(NoSuchMethodException::new);
-            setDisplayNameRaw.setAccessible(true);
-            SET_DISPLAY_NAME_RAW = lookup.unreflect(setDisplayNameRaw);
+                Method setDisplayNameRaw = teamMethods.stream()
+                        .filter(m -> m.getName().equals("setDisplayNameRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                        .findFirst().orElseThrow(NoSuchMethodException::new);
+                setDisplayNameRaw.setAccessible(true);
+                SET_DISPLAY_NAME_RAW = lookup.unreflect(setDisplayNameRaw);
 
-            Method setPlayerPrefixRaw = teamMethods.stream()
-                    .filter(m -> m.getName().equals("setPlayerPrefixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
-                    .findFirst().orElseThrow(NoSuchMethodException::new);
-            setPlayerPrefixRaw.setAccessible(true);
-            SET_PLAYER_PREFIX_RAW = lookup.unreflect(setPlayerPrefixRaw);
+                Method setPlayerPrefixRaw = teamMethods.stream()
+                        .filter(m -> m.getName().equals("setPlayerPrefixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                        .findFirst().orElseThrow(NoSuchMethodException::new);
+                setPlayerPrefixRaw.setAccessible(true);
+                SET_PLAYER_PREFIX_RAW = lookup.unreflect(setPlayerPrefixRaw);
 
-            Method setPlayerSuffixRaw = teamMethods.stream()
-                    .filter(m -> m.getName().equals("setPlayerSuffixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
-                    .findFirst().orElseThrow(NoSuchMethodException::new);
-            setPlayerSuffixRaw.setAccessible(true);
-            SET_PLAYER_SUFFIX_RAW = lookup.unreflect(setPlayerSuffixRaw);
+                Method setPlayerSuffixRaw = teamMethods.stream()
+                        .filter(m -> m.getName().equals("setPlayerSuffixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                        .findFirst().orElseThrow(NoSuchMethodException::new);
+                setPlayerSuffixRaw.setAccessible(true);
+                SET_PLAYER_SUFFIX_RAW = lookup.unreflect(setPlayerSuffixRaw);
+            }
 
             Class<?> objectiveRenderTypeClass = FastReflection.nmsOptionalClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay", "ObjectiveCriteria$RenderType").orElse(null);
 
