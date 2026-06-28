@@ -130,7 +130,11 @@ public class FastBoard extends FastBoardBase<String> {
             suffix = suffix.substring(0, Math.min(maxLength, suffix.length()));
         }
 
-        sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
+        if (VersionType.V1_20_4.isHigherOrEqual()) {
+            sendScorePacket(score, ScoreboardAction.CHANGE);
+        } else {
+            sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
+        }
     }
 
     @Override

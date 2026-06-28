@@ -169,9 +169,7 @@ public abstract class FastBoardBase<T> {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
                 OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
                 PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
-                PACKET_SB_DISPLAY_OBJ = displaySlotEnum.isPresent()
-                        ? lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.get(), objectiveClass))
-                        : lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
+                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.orElse(int.class), objectiveClass));
             } else {
                 packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
                 if (VersionType.V1_13.isHigherOrEqual()) {
@@ -677,22 +675,6 @@ public abstract class FastBoardBase<T> {
                     ENUM_SB_HEALTH_DISPLAY_INTEGER, // Render type
                     false, // Auto-update, unused
                     null // Number format
-            );
-        } else if (VersionType.V1_20_4.isHigherOrEqual()) {
-            objective = OBJECTIVE.invoke(
-                    null, // Scoreboard, unused
-                    this.id, // Objective name
-                    null, // Criteria, unused
-                    toMinecraftComponent(this.title), // Display name
-                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
-            );
-        } else if (VersionType.V1_17.isHigherOrEqual()) {
-            objective = OBJECTIVE.invoke(
-                    null, // Scoreboard, unused
-                    this.id, // Objective name
-                    null, // Criteria, unused
-                    toMinecraftComponent(this.title), // Display name
-                    ENUM_SB_HEALTH_DISPLAY_INTEGER // Render type
             );
         } else if (VersionType.V1_13.isHigherOrEqual()) {
             objective = OBJECTIVE.invoke(
