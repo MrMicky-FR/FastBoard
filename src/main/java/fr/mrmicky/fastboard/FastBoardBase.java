@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -80,6 +81,21 @@ public abstract class FastBoardBase<T> {
     private static final Object ENUM_SB_ACTION_CHANGE;
     private static final Object ENUM_SB_ACTION_REMOVE;
     private static final Object DUMMY_SCOREBOARD_CRITERIA;
+
+    // handles for methods that set the raw component fields of a scoreboard team. canvas only
+    private static final MethodHandle SET_PLAYER_SUFFIX_RAW;
+    private static final MethodHandle SET_PLAYER_PREFIX_RAW;
+    private static final MethodHandle SET_DISPLAY_NAME_RAW;
+
+    // method to check if we are on a canvas server
+    private static boolean isCanvas() {
+        try {
+            Class.forName("io.canvasmc.canvas.util.LockedReference");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 
     static {
         try {
@@ -130,6 +146,30 @@ public abstract class FastBoardBase<T> {
             Class<?> objectiveClass = FastReflection.nmsClass("world.scores", "ScoreboardObjective", "Objective");
             Class<?> objectiveCriteriaClass = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria", "ObjectiveCriteria");
             PLAYER_TEAM = lookup.unreflectConstructor(playerTeamClass.getConstructor(scoreboardClass, String.class));
+
+            // Canvas has changed the way scoreboard teams work, so we need to use reflection to find the methods that set the raw component fields
+            List<Method> teamMethods = Stream.concat(
+                    Arrays.stream(playerTeamClass.getSuperclass().getDeclaredMethods()),
+                    Arrays.stream(playerTeamClass.getDeclaredMethods())
+            ).collect(Collectors.toList());
+
+            Method setDisplayNameRaw = teamMethods.stream()
+                    .filter(m -> m.getName().equals("setDisplayNameRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                    .findFirst().orElseThrow(NoSuchMethodException::new);
+            setDisplayNameRaw.setAccessible(true);
+            SET_DISPLAY_NAME_RAW = lookup.unreflect(setDisplayNameRaw);
+
+            Method setPlayerPrefixRaw = teamMethods.stream()
+                    .filter(m -> m.getName().equals("setPlayerPrefixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                    .findFirst().orElseThrow(NoSuchMethodException::new);
+            setPlayerPrefixRaw.setAccessible(true);
+            SET_PLAYER_PREFIX_RAW = lookup.unreflect(setPlayerPrefixRaw);
+
+            Method setPlayerSuffixRaw = teamMethods.stream()
+                    .filter(m -> m.getName().equals("setPlayerSuffixRaw") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == CHAT_COMPONENT_CLASS)
+                    .findFirst().orElseThrow(NoSuchMethodException::new);
+            setPlayerSuffixRaw.setAccessible(true);
+            SET_PLAYER_SUFFIX_RAW = lookup.unreflect(setPlayerSuffixRaw);
 
             Class<?> objectiveRenderTypeClass = FastReflection.nmsOptionalClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay", "ObjectiveCriteria$RenderType").orElse(null);
 
@@ -840,6 +880,26 @@ public abstract class FastBoardBase<T> {
     }
 
     private void setComponentField(Object packet, T value, int count) throws Throwable {
+        Class<?> packetClass = packet.getClass();
+        String className = packetClass.getSimpleName();
+
+        // Canvas has changed the way scoreboard teams work, so we need to use reflection to find the methods that set the raw component fields
+        if (className.equals("PlayerTeam") || className.equals("ScoreboardTeam")) {
+            if (isCanvas()) {
+                Object component = toMinecraftComponent(value);
+                if (count == 1) {
+                    SET_DISPLAY_NAME_RAW.invoke(packet, component);
+                    return;
+                } else if (count == 2) {
+                    SET_PLAYER_PREFIX_RAW.invoke(packet, component);
+                    return;
+                } else if (count == 3) {
+                    SET_PLAYER_SUFFIX_RAW.invoke(packet, component);
+                    return;
+                }
+            }
+        }
+
         if (!VersionType.V1_13.isHigherOrEqual()) {
             String line = value != null ? serializeLine(value) : "";
             setField(packet, String.class, line, count);
@@ -847,9 +907,13 @@ public abstract class FastBoardBase<T> {
         }
 
         int i = 0;
-        for (Field field : PACKETS.get(packet.getClass())) {
-            if ((field.getType() == String.class || field.getType() == CHAT_COMPONENT_CLASS) && count == i++) {
-                field.set(packet, toMinecraftComponent(value));
+        Field[] fields = PACKETS.get(packetClass);
+        if (fields != null) {
+            for (Field field : fields) {
+                if ((field.getType() == String.class || field.getType() == CHAT_COMPONENT_CLASS) && count == i++) {
+                    field.set(packet, toMinecraftComponent(value));
+                    break;
+                }
             }
         }
     }
