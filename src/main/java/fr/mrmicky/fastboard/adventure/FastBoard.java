@@ -83,7 +83,7 @@ public class FastBoard extends FastBoardBase<Component> {
     protected void sendLineChange(int score) throws Throwable {
         Component line = getLineByScore(score);
 
-        if (VersionType.V1_20_4.isHigherOrEqual()) {
+        if (VersionType.V1_20_3.isCurrentAtLeast()) {
             sendScorePacket(score, ScoreboardAction.CHANGE);
         } else {
             sendTeamPacket(score, TeamMode.UPDATE, line, null);
