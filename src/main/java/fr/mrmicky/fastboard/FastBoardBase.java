@@ -107,7 +107,8 @@ public abstract class FastBoardBase<T> {
             Class<?> packetSbObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardObjective", "ClientboundSetObjectivePacket");
             Class<?> packetSbDisplayObjClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardDisplayObjective", "ClientboundSetDisplayObjectivePacket");
             Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore", "ClientboundSetScorePacket");
-            Class<?> packetSbTeamClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam", "ClientboundSetPlayerTeamPacket");
+            Class<?> packetSbTeamClass = VersionType.V1_20_3.isCurrentAtLeast()
+                    ? null : FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam", "ClientboundSetPlayerTeamPacket");
             Class<?> sbTeamClass = VersionType.V1_17.isCurrentAtLeast()
                     ? FastReflection.innerClass(packetSbTeamClass, innerClass -> !innerClass.isEnum()) : null;
             Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
@@ -128,16 +129,19 @@ public abstract class FastBoardBase<T> {
             SEND_PACKET = lookup.unreflect(sendPacketMethod);
 
             Class<?> scoreboardClass = FastReflection.nmsClass("world.scores", "Scoreboard");
-            Class<?> playerTeamClass = FastReflection.nmsClass("world.scores", "ScoreboardTeam", "PlayerTeam");
+            Class<?> playerTeamClass = VersionType.V1_20_3.isCurrentAtLeast() ?
+                    null : FastReflection.nmsClass("world.scores", "ScoreboardTeam", "PlayerTeam");
             Class<?> objectiveClass = FastReflection.nmsClass("world.scores", "ScoreboardObjective", "Objective");
             Class<?> objectiveCriteriaClass = FastReflection.nmsClass("world.scores.criteria", "IScoreboardCriteria", "ObjectiveCriteria");
-            PLAYER_TEAM = lookup.unreflectConstructor(playerTeamClass.getConstructor(scoreboardClass, String.class));
 
             Class<?> objectiveRenderTypeClass = FastReflection.nmsOptionalClass("world.scores.criteria", "IScoreboardCriteria$EnumScoreboardHealthDisplay", "ObjectiveCriteria$RenderType").orElse(null);
 
             MethodHandle packetSbSetScore;
             MethodHandle packetSbResetScore = null;
             MethodHandle fixedFormatConstructor = null;
+            MethodHandle packetSbSerializableTeam = null;
+            MethodHandle packetSbTeam = null;
+            MethodHandle playerTeam = null;
             Object blankNumberFormat = null;
             boolean scoreOptionalComponents = false;
 
@@ -163,46 +167,53 @@ public abstract class FastBoardBase<T> {
                 scoreOptionalComponents = optionalScorePacket.isPresent();
                 packetSbResetScore = lookup.findConstructor(resetScoreClass, removeScoreType);
                 blankNumberFormat = blankField.isPresent() ? blankField.get().get(null) : null;
-            } else if (VersionType.V1_17.isCurrentAtLeast()) {
-                Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action", "ServerScoreboard$Method");
-                MethodType scoreType = MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class);
-                packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
-                OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
-                PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
-                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.orElse(int.class), objectiveClass));
             } else {
-                packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
-                if (VersionType.V1_13.isCurrentAtLeast()) {
+                Constructor<?> packetSbTeamConstructor = sbTeamClass != null ? packetSbTeamClass.getDeclaredConstructor(String.class, int.class, Optional.class, Collection.class) : packetSbTeamClass.getDeclaredConstructor();
+                packetSbTeamConstructor.setAccessible(true);
+                packetSbTeam = lookup.unreflectConstructor(packetSbTeamConstructor);
+                packetSbSerializableTeam = sbTeamClass != null ? lookup.unreflectConstructor(sbTeamClass.getConstructor(playerTeamClass)) : null;
+
+                playerTeam = lookup.unreflectConstructor(playerTeamClass.getConstructor(scoreboardClass, String.class));
+                if (VersionType.V1_17.isCurrentAtLeast()) {
+                    Class<?> enumSbAction = FastReflection.nmsClass("server", "ScoreboardServer$Action", "ServerScoreboard$Method");
+                    MethodType scoreType = MethodType.methodType(void.class, enumSbAction, String.class, String.class, int.class);
+                    packetSbSetScore = lookup.findConstructor(packetSbScoreClass, scoreType);
                     OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
+                    PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
+                    PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(displaySlotEnum.orElse(int.class), objectiveClass));
                 } else {
-                    OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass));
+                    packetSbSetScore = lookup.findConstructor(packetSbScoreClass, MethodType.methodType(void.class));
+                    if (VersionType.V1_13.isCurrentAtLeast()) {
+                        OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass, CHAT_COMPONENT_CLASS, objectiveRenderTypeClass));
+                    } else {
+                        OBJECTIVE = lookup.unreflectConstructor(objectiveClass.getConstructor(scoreboardClass, String.class, objectiveCriteriaClass));
+                    }
+                    PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
+                    PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
                 }
-                PACKET_SB_OBJ = lookup.unreflectConstructor(packetSbObjClass.getConstructor(objectiveClass, int.class));
-                PACKET_SB_DISPLAY_OBJ = lookup.unreflectConstructor(packetSbDisplayObjClass.getConstructor(int.class, objectiveClass));
+
+                for (Class<?> clazz : Arrays.asList(packetSbScoreClass, packetSbTeamClass, sbTeamClass, playerTeamClass, objectiveClass)) {
+                    if (clazz == null) {
+                        continue;
+                    }
+                    Field[] fields = Arrays.stream(clazz.getDeclaredFields())
+                            .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                            .toArray(Field[]::new);
+                    for (Field field : fields) {
+                        field.setAccessible(true);
+                    }
+                    PACKETS.put(clazz, fields);
+                }
             }
 
             PACKET_SB_SET_SCORE = packetSbSetScore;
             PACKET_SB_RESET_SCORE = packetSbResetScore;
-            Constructor<?> packetSbTeamConstructor = sbTeamClass != null ? packetSbTeamClass.getDeclaredConstructor(String.class, int.class, Optional.class, Collection.class) : packetSbTeamClass.getDeclaredConstructor();
-            packetSbTeamConstructor.setAccessible(true);
-            PACKET_SB_TEAM = lookup.unreflectConstructor(packetSbTeamConstructor);
-            PACKET_SB_SERIALIZABLE_TEAM = sbTeamClass != null ? lookup.unreflectConstructor(sbTeamClass.getConstructor(playerTeamClass)) : null;
+            PACKET_SB_TEAM = packetSbTeam;
+            PACKET_SB_SERIALIZABLE_TEAM = packetSbSerializableTeam;
             FIXED_NUMBER_FORMAT = fixedFormatConstructor;
             BLANK_NUMBER_FORMAT = blankNumberFormat;
             SCORE_OPTIONAL_COMPONENTS = scoreOptionalComponents;
-
-            for (Class<?> clazz : Arrays.asList(packetSbScoreClass, packetSbTeamClass, sbTeamClass, playerTeamClass, objectiveClass)) {
-                if (clazz == null) {
-                    continue;
-                }
-                Field[] fields = Arrays.stream(clazz.getDeclaredFields())
-                        .filter(field -> !Modifier.isStatic(field.getModifiers()))
-                        .toArray(Field[]::new);
-                for (Field field : fields) {
-                    field.setAccessible(true);
-                }
-                PACKETS.put(clazz, fields);
-            }
+            PLAYER_TEAM = playerTeam;
 
             if (VersionType.V1_8.isCurrentAtLeast()) {
                 String enumSbActionClass = VersionType.V1_13.isCurrentAtLeast()
@@ -350,8 +361,8 @@ public abstract class FastBoardBase<T> {
 
                 sendLineChange(getScoreByLine(line));
 
-                if (customScoresSupported()) {
-                    sendScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
+                if (VersionType.V1_20_3.isCurrentAtLeast()) {
+                    sendModernScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
                 }
 
                 return;
@@ -495,8 +506,8 @@ public abstract class FastBoardBase<T> {
         this.scores.set(line, score);
 
         try {
-            if (customScoresSupported()) {
-                sendScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
+            if (VersionType.V1_20_3.isCurrentAtLeast()) {
+                sendModernScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
             }
         } catch (Throwable e) {
             throw new RuntimeException("Unable to update line score", e);
@@ -550,8 +561,8 @@ public abstract class FastBoardBase<T> {
             this.scores.set(i, newScores.get(i));
 
             try {
-                if (customScoresSupported()) {
-                    sendScorePacket(getScoreByLine(i), ScoreboardAction.CHANGE);
+                if (VersionType.V1_20_3.isCurrentAtLeast()) {
+                    sendModernScorePacket(getScoreByLine(i), ScoreboardAction.CHANGE);
                 }
             } catch (Throwable e) {
                 throw new RuntimeException("Unable to update scores", e);
@@ -584,15 +595,6 @@ public abstract class FastBoardBase<T> {
      */
     public boolean isDeleted() {
         return this.deleted;
-    }
-
-    /**
-     * Returns whether the server supports custom scoreboard scores (1.20.3+ servers only).
-     *
-     * @return true if the server supports custom scores
-     */
-    public boolean customScoresSupported() {
-        return VersionType.V1_20_3.isCurrentAtLeast();
     }
 
     /**
@@ -630,6 +632,11 @@ public abstract class FastBoardBase<T> {
         this.deleted = true;
     }
 
+    /**
+     * Sends a line update packet for the specified internal score.
+     *
+     * @param score the position to update
+     */
     protected abstract void sendLineChange(int score) throws Throwable;
 
     protected abstract Object toMinecraftComponent(T value) throws Throwable;
@@ -732,7 +739,7 @@ public abstract class FastBoardBase<T> {
         sendPacket(packet);
     }
 
-    private void sendModernScorePacket(int score, ScoreboardAction action) throws Throwable {
+    protected void sendModernScorePacket(int score, ScoreboardAction action) throws Throwable {
         String objName = COLOR_CODES[score];
         Object enumAction = action == ScoreboardAction.REMOVE
                 ? ENUM_SB_ACTION_REMOVE : ENUM_SB_ACTION_CHANGE;
@@ -747,14 +754,14 @@ public abstract class FastBoardBase<T> {
             return;
         }
 
-        T text = getLineByScore(score);
-        T scoreFormat = getLineByScore(this.scores, score);
-        Object format = scoreFormat != null
-                ? FIXED_NUMBER_FORMAT.invoke(toMinecraftComponent(scoreFormat))
+        Object text = toMinecraftComponent(getLineByScore(score));
+        T rawFormat = getLineByScore(this.scores, score);
+        Object format = rawFormat != null
+                ? FIXED_NUMBER_FORMAT.invoke(toMinecraftComponent(rawFormat))
                 : BLANK_NUMBER_FORMAT;
         Object scorePacket = SCORE_OPTIONAL_COMPONENTS
-                ? PACKET_SB_SET_SCORE.invoke(objName, this.id, score, Optional.of(toMinecraftComponent(text)), Optional.of(format))
-                : PACKET_SB_SET_SCORE.invoke(objName, this.id, score, toMinecraftComponent(text), format);
+                ? PACKET_SB_SET_SCORE.invoke(objName, this.id, score, Optional.of(text), Optional.of(format))
+                : PACKET_SB_SET_SCORE.invoke(objName, this.id, score, text, format);
 
         sendPacket(scorePacket);
     }

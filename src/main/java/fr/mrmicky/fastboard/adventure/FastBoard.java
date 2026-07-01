@@ -75,17 +75,16 @@ public class FastBoard extends FastBoardBase<Component> {
     }
 
     /**
-     * Sends a line update packet for the specified internal score.
-     *
-     * @param score the internal score of the line to update
+     * {@inheritDoc}
      */
     @Override
     protected void sendLineChange(int score) throws Throwable {
         Component line = getLineByScore(score);
 
         if (VersionType.V1_20_3.isCurrentAtLeast()) {
-            sendScorePacket(score, ScoreboardAction.CHANGE);
+            sendModernScorePacket(score, ScoreboardAction.CHANGE);
         } else {
+            sendScorePacket(score, ScoreboardAction.CHANGE);
             sendTeamPacket(score, TeamMode.UPDATE, line, null);
         }
     }

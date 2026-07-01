@@ -95,6 +95,9 @@ public class FastBoard extends FastBoardBase<String> {
         super.updateLines(lines);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void sendLineChange(int score) throws Throwable {
         int maxLength = hasLinesMaxLength() ? 16 : 1024;
@@ -131,8 +134,9 @@ public class FastBoard extends FastBoardBase<String> {
         }
 
         if (VersionType.V1_20_3.isCurrentAtLeast()) {
-            sendScorePacket(score, ScoreboardAction.CHANGE);
+            sendModernScorePacket(score, ScoreboardAction.CHANGE);
         } else {
+            sendScorePacket(score, ScoreboardAction.CHANGE);
             sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
         }
     }
