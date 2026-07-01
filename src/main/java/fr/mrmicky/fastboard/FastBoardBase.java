@@ -479,11 +479,16 @@ public abstract class FastBoardBase<T> {
             }
 
             for (int i = 0; i < linesSize; i++) {
-                if (!Objects.equals(getLineByScore(oldLines, i), getLineByScore(i))) {
-                    sendLineChange(i);
-                }
-                if (!Objects.equals(getLineByScore(oldScores, i), getLineByScore(this.scores, i))) {
-                    sendScorePacket(i, ScoreboardAction.CHANGE);
+                boolean isNewTextDifferentFromOld = !Objects.equals(getLineByScore(oldLines, i), getLineByScore(i));
+                boolean isNewFormatDifferentFromOld = !Objects.equals(getLineByScore(oldScores, i), getLineByScore(this.scores, i));
+                if (VersionType.V1_20_3.isCurrentAtLeast() && (isNewTextDifferentFromOld || isNewFormatDifferentFromOld)) {
+                    sendModernScorePacket(i, ScoreboardAction.CHANGE);
+                } else {
+                    if (isNewTextDifferentFromOld) {
+                        sendLineChange(i);
+                    } if (isNewFormatDifferentFromOld) {
+                        sendScorePacket(i, ScoreboardAction.CHANGE);
+                    }
                 }
             }
         } catch (Throwable t) {
