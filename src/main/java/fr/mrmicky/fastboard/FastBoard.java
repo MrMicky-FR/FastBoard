@@ -66,7 +66,7 @@ public class FastBoard extends FastBoardBase<String> {
     public void updateTitle(String title) {
         Objects.requireNonNull(title, "title");
 
-        if (!VersionType.V1_13.isHigherOrEqual() && title.length() > 32) {
+        if (!VersionType.V1_13.isCurrentAtLeast() && title.length() > 32) {
             throw new IllegalArgumentException("Title is longer than 32 chars");
         }
 
@@ -82,7 +82,7 @@ public class FastBoard extends FastBoardBase<String> {
     public void updateLines(String... lines) {
         Objects.requireNonNull(lines, "lines");
 
-        if (!VersionType.V1_13.isHigherOrEqual()) {
+        if (!VersionType.V1_13.isCurrentAtLeast()) {
             int lineCount = 0;
             for (String s : lines) {
                 if (s != null && s.length() > 30) {
@@ -95,6 +95,9 @@ public class FastBoard extends FastBoardBase<String> {
         super.updateLines(lines);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void sendLineChange(int score) throws Throwable {
         int maxLength = hasLinesMaxLength() ? 16 : 1024;
@@ -130,7 +133,12 @@ public class FastBoard extends FastBoardBase<String> {
             suffix = suffix.substring(0, Math.min(maxLength, suffix.length()));
         }
 
-        sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
+        if (VersionType.V1_20_3.isCurrentAtLeast()) {
+            sendModernScorePacket(score, ScoreboardAction.CHANGE);
+        } else {
+            sendScorePacket(score, ScoreboardAction.CHANGE);
+            sendTeamPacket(score, TeamMode.UPDATE, prefix, suffix);
+        }
     }
 
     @Override
@@ -160,6 +168,6 @@ public class FastBoard extends FastBoardBase<String> {
      * @return true if scoreboard lines are limited by the legacy prefix/suffix length
      */
     protected boolean hasLinesMaxLength() {
-        return !VersionType.V1_13.isHigherOrEqual();
+        return !VersionType.V1_13.isCurrentAtLeast();
     }
 }
