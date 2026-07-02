@@ -109,7 +109,7 @@ public abstract class FastBoardBase<T> {
             Class<?> packetSbScoreClass = FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardScore", "ClientboundSetScorePacket");
             Class<?> packetSbTeamClass = VersionType.V1_20_3.isCurrentAtLeast()
                     ? null : FastReflection.nmsClass(gameProtocolPackage, "PacketPlayOutScoreboardTeam", "ClientboundSetPlayerTeamPacket");
-            Class<?> sbTeamClass = VersionType.V1_17.isCurrentAtLeast()
+            Class<?> sbTeamClass = VersionType.V1_17.isCurrentAtLeast() && !VersionType.V1_20_3.isCurrentAtLeast()
                     ? FastReflection.innerClass(packetSbTeamClass, innerClass -> !innerClass.isEnum()) : null;
             Field playerConnectionField = Arrays.stream(entityPlayerClass.getFields())
                     .filter(field -> field.getType().isAssignableFrom(playerConnectionClass))
@@ -360,11 +360,6 @@ public abstract class FastBoardBase<T> {
                 this.scores.set(line, scoreText);
 
                 sendLineChange(getScoreByLine(line));
-
-                if (VersionType.V1_20_3.isCurrentAtLeast()) {
-                    sendModernScorePacket(getScoreByLine(line), ScoreboardAction.CHANGE);
-                }
-
                 return;
             }
 
@@ -470,8 +465,12 @@ public abstract class FastBoardBase<T> {
                     }
                 } else {
                     for (int i = oldLinesCopy.size(); i < linesSize; i++) {
-                        sendScorePacket(i, ScoreboardAction.CHANGE);
-                        if (!VersionType.V1_20_3.isCurrentAtLeast()) {
+                        if (VersionType.V1_20_3.isCurrentAtLeast()) {
+                            sendModernScorePacket(i, ScoreboardAction.CHANGE);
+                            oldLines.add(0, getLineByScore(i));
+                            oldScores.add(0, getLineByScore(this.scores, i));
+                        } else {
+                            sendScorePacket(i, ScoreboardAction.CHANGE);
                             sendTeamPacket(i, TeamMode.CREATE, null, null);
                         }
                     }
@@ -486,8 +485,6 @@ public abstract class FastBoardBase<T> {
                 } else {
                     if (isNewTextDifferentFromOld) {
                         sendLineChange(i);
-                    } if (isNewFormatDifferentFromOld) {
-                        sendScorePacket(i, ScoreboardAction.CHANGE);
                     }
                 }
             }
