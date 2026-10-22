@@ -147,6 +147,10 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
 
+        for (Player player : getServer().getOnlinePlayers()) {
+            createBoard(player);
+        }
+
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (FastBoard board : this.boards.values()) {
                 updateBoard(board);
@@ -154,15 +158,17 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
         }, 0, 20);
     }
 
+    @Override
+    public void onDisable() {
+        for (FastBoard board : this.boards.values()) {
+            board.delete();
+        }
+        this.boards.clear();
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        Player player = e.getPlayer();
-
-        FastBoard board = new FastBoard(player);
-
-        board.updateTitle(ChatColor.RED + "FastBoard");
-
-        this.boards.put(player.getUniqueId(), board);
+        createBoard(e.getPlayer());
     }
 
     @EventHandler
@@ -176,6 +182,13 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    private void createBoard(Player player) {
+        FastBoard board = new FastBoard(player);
+        board.updateTitle(ChatColor.RED + "FastBoard");
+        updateBoard(board);
+        this.boards.put(player.getUniqueId(), board);
+    }
+
     private void updateBoard(FastBoard board) {
         board.updateLines(
                 "",
@@ -187,6 +200,9 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
     }
 }
 ```
+
+Create a board for each player who is already online when the plugin starts.
+Delete all boards in `onDisable()` to remove them from players when the plugin stops.
 
 ## Adventure support
 
