@@ -334,7 +334,6 @@ public abstract class FastBoardBase<T> {
     /**
      * Updates a single scoreboard line including how its score is displayed.
      * The score will only be displayed on 1.20.3 and higher.
-     * No packet is sent if both the line text and the score text are unchanged.
      *
      * @param line      the line number
      * @param score     the new line text
@@ -346,7 +345,7 @@ public abstract class FastBoardBase<T> {
 
         try {
             if (line < size()) {
-                if (!this.deleted && Objects.equals(this.lines.get(line), score)
+                if (Objects.equals(this.lines.get(line), score)
                         && Objects.equals(this.scores.get(line), scoreText)) {
                     return;
                 }
@@ -483,7 +482,6 @@ public abstract class FastBoardBase<T> {
     /**
      * Updates how a specified line's score is displayed on the scoreboard. A null value will reset the displayed
      * text back to default. The scores will only be displayed for servers on 1.20.3 and higher.
-     * No packet is sent if the score text is unchanged.
      *
      * @param line  the line number
      * @param score the new line score, or null to use the default blank score
@@ -493,7 +491,7 @@ public abstract class FastBoardBase<T> {
     public synchronized void updateScore(int line, T score) {
         checkLineNumber(line, true, false);
 
-        if (!this.deleted && Objects.equals(this.scores.get(line), score)) {
+        if (Objects.equals(this.scores.get(line), score)) {
             return;
         }
 
