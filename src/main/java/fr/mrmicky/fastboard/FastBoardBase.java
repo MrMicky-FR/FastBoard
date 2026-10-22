@@ -270,8 +270,11 @@ public abstract class FastBoardBase<T> {
      *
      * @param title the new scoreboard title
      * @throws IllegalArgumentException if the title is longer than 32 chars on 1.12 or lower
+     * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void updateTitle(T title) {
+        checkState();
+
         if (this.title.equals(Objects.requireNonNull(title, "title"))) {
             return;
         }
@@ -326,6 +329,7 @@ public abstract class FastBoardBase<T> {
      * @param line  the line number
      * @param score the new line text
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score) {
         updateLine(line, score, null);
@@ -339,8 +343,10 @@ public abstract class FastBoardBase<T> {
      * @param score     the new line text
      * @param scoreText the new line score, or null to use the default blank score
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score, T scoreText) {
+        checkState();
         checkLineNumber(line, false, false);
 
         try {
@@ -375,8 +381,10 @@ public abstract class FastBoardBase<T> {
      * Removes a scoreboard line.
      *
      * @param line the line number
+     * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void removeLine(int line) {
+        checkState();
         checkLineNumber(line, false, false);
 
         if (line >= size()) {
@@ -423,6 +431,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLines(Collection<T> lines, Collection<T> scores) {
+        checkState();
         Objects.requireNonNull(lines, "lines");
         checkLineNumber(lines.size(), false, true);
 
@@ -484,6 +493,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateScore(int line, T score) {
+        checkState();
         checkLineNumber(line, true, false);
 
         this.scores.set(line, score);
@@ -529,6 +539,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateScores(Collection<T> scores) {
+        checkState();
         Objects.requireNonNull(scores, "scores");
 
         if (scores.size() != this.lines.size()) {
@@ -592,6 +603,7 @@ public abstract class FastBoardBase<T> {
     /**
      * Deletes this FastBoard and removes the scoreboard from the associated player if they are online.
      * After deletion, all scoreboard update methods will throw an {@link IllegalStateException}.
+     * Stored values are kept and can still be read after deletion.
      */
     public synchronized void delete() {
         if (this.deleted) {
@@ -639,6 +651,12 @@ public abstract class FastBoardBase<T> {
      */
     protected boolean hasCustomScores() {
         return true;
+    }
+
+    private void checkState() {
+        if (this.deleted) {
+            throw new IllegalStateException("This FastBoard is deleted");
+        }
     }
 
     private void checkLineNumber(int line, boolean checkInRange, boolean checkMax) {
@@ -819,9 +837,7 @@ public abstract class FastBoardBase<T> {
     }
 
     private void sendPacket(Object packet) throws Throwable {
-        if (this.deleted) {
-            throw new IllegalStateException("This FastBoard is deleted");
-        }
+        checkState();
 
         if (this.player.isOnline()) {
             Object entityPlayer = PLAYER_GET_HANDLE.invoke(this.player);
