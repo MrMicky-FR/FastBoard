@@ -326,6 +326,7 @@ public abstract class FastBoardBase<T> {
      * @param line  the line number
      * @param score the new line text
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
      */
     public synchronized void updateLine(int line, T score) {
         updateLine(line, score, null);
@@ -339,6 +340,7 @@ public abstract class FastBoardBase<T> {
      * @param score     the new line text
      * @param scoreText the new line score, or null to use the default blank score
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
      */
     public synchronized void updateLine(int line, T score, T scoreText) {
         checkLineNumber(line, false, false);
@@ -398,7 +400,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public void updateLines(T... lines) {
-        updateLines(Arrays.asList(lines));
+        updateLines(Arrays.asList(Objects.requireNonNull(lines, "lines")));
     }
 
     /**
