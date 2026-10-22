@@ -347,6 +347,11 @@ public abstract class FastBoardBase<T> {
 
         try {
             if (line < size()) {
+                if (Objects.equals(this.lines.get(line), score)
+                        && Objects.equals(this.scores.get(line), scoreText)) {
+                    return;
+                }
+
                 this.lines.set(line, score);
                 this.scores.set(line, scoreText);
 
@@ -487,6 +492,10 @@ public abstract class FastBoardBase<T> {
      */
     public synchronized void updateScore(int line, T score) {
         checkLineNumber(line, true, false);
+
+        if (Objects.equals(this.scores.get(line), score)) {
+            return;
+        }
 
         this.scores.set(line, score);
 
