@@ -270,7 +270,7 @@ public abstract class FastBoardBase<T> {
      *
      * @param title the new scoreboard title
      * @throws IllegalArgumentException if the title is longer than 32 chars on 1.12 or lower
-     * @throws IllegalStateException if this FastBoard has already been deleted
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateTitle(T title) {
         checkState();
@@ -330,7 +330,7 @@ public abstract class FastBoardBase<T> {
      * @param score the new line text
      * @throws IllegalArgumentException if the line number is out of range
      * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
-     * @throws IllegalStateException if this FastBoard has already been deleted
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score) {
         updateLine(line, score, null);
@@ -345,7 +345,7 @@ public abstract class FastBoardBase<T> {
      * @param scoreText the new line score, or null to use the default blank score
      * @throws IllegalArgumentException if the line number is out of range
      * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
-     * @throws IllegalStateException if this FastBoard has already been deleted
+     * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score, T scoreText) {
         checkState();
@@ -438,8 +438,8 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateLines(Collection<T> lines, Collection<T> scores) {
-        checkState();
         Objects.requireNonNull(lines, "lines");
+        checkState();
         checkLineNumber(lines.size(), false, true);
 
         if (scores != null && scores.size() != lines.size()) {
@@ -550,8 +550,8 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public synchronized void updateScores(Collection<T> scores) {
-        checkState();
         Objects.requireNonNull(scores, "scores");
+        checkState();
 
         if (scores.size() != this.lines.size()) {
             throw new IllegalArgumentException("The size of the scores must match the size of the board");
