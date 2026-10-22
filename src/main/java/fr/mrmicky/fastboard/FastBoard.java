@@ -29,10 +29,12 @@ import org.bukkit.entity.Player;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
  * String-based implementation of {@link FastBoardBase}.
+ * On Minecraft 1.12 and earlier, line text is limited to 30 chars for all update methods.
  */
 public class FastBoard extends FastBoardBase<String> {
 
@@ -82,17 +84,46 @@ public class FastBoard extends FastBoardBase<String> {
     public void updateLines(String... lines) {
         Objects.requireNonNull(lines, "lines");
 
+        super.updateLines(lines);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NullPointerException if lines is null
+     */
+    @Override
+    public synchronized void updateLines(Collection<String> lines, Collection<String> scores) {
+        Objects.requireNonNull(lines, "lines");
+
         if (!VersionType.V1_13.isCurrentAtLeast()) {
             int lineCount = 0;
             for (String s : lines) {
-                if (s != null && s.length() > 30) {
-                    throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
-                }
-                lineCount++;
+                checkLineLength(lineCount++, s);
             }
         }
 
-        super.updateLines(lines);
+        super.updateLines(lines, scores);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
+     */
+    @Override
+    public synchronized void updateLine(int line, String text, String scoreText) {
+        if (!VersionType.V1_13.isCurrentAtLeast()) {
+            checkLineLength(line, text);
+        }
+
+        super.updateLine(line, text, scoreText);
+    }
+
+    private void checkLineLength(int line, String text) {
+        if (text != null && text.length() > 30) {
+            throw new IllegalArgumentException("Line " + line + " is longer than 30 chars");
+        }
     }
 
     /**
