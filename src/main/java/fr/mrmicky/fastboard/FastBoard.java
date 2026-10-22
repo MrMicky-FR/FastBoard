@@ -29,6 +29,7 @@ import org.bukkit.entity.Player;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -59,8 +60,6 @@ public class FastBoard extends FastBoardBase<String> {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws NullPointerException if title is null
      */
     @Override
     public void updateTitle(String title) {
@@ -75,24 +74,31 @@ public class FastBoard extends FastBoardBase<String> {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws NullPointerException if lines is null
      */
     @Override
-    public void updateLines(String... lines) {
+    public synchronized void updateLines(Collection<String> lines, Collection<String> scores) {
         Objects.requireNonNull(lines, "lines");
 
         if (!VersionType.V1_13.isCurrentAtLeast()) {
             int lineCount = 0;
-            for (String s : lines) {
-                if (s != null && s.length() > 30) {
-                    throw new IllegalArgumentException("Line " + lineCount + " is longer than 30 chars");
-                }
-                lineCount++;
+            for (String line : lines) {
+                checkLineLength(lineCount++, line);
             }
         }
 
-        super.updateLines(lines);
+        super.updateLines(lines, scores);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void updateLine(int line, String text, String scoreText) {
+        if (!VersionType.V1_13.isCurrentAtLeast()) {
+            checkLineLength(line, text);
+        }
+
+        super.updateLine(line, text, scoreText);
     }
 
     /**
@@ -168,5 +174,11 @@ public class FastBoard extends FastBoardBase<String> {
      */
     protected boolean hasLinesMaxLength() {
         return !VersionType.V1_13.isCurrentAtLeast();
+    }
+
+    private void checkLineLength(int line, String text) {
+        if (text != null && text.length() > 30) {
+            throw new IllegalArgumentException("Line " + line + " is longer than 30 chars");
+        }
     }
 }
