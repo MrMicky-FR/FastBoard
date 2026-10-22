@@ -329,6 +329,7 @@ public abstract class FastBoardBase<T> {
      * @param line  the line number
      * @param score the new line text
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score) {
@@ -343,6 +344,7 @@ public abstract class FastBoardBase<T> {
      * @param score     the new line text
      * @param scoreText the new line score, or null to use the default blank score
      * @throws IllegalArgumentException if the line number is out of range
+     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
      * @throws IllegalStateException if this FastBoard has already been deleted
      */
     public synchronized void updateLine(int line, T score, T scoreText) {
@@ -351,6 +353,11 @@ public abstract class FastBoardBase<T> {
 
         try {
             if (line < size()) {
+                if (Objects.equals(this.lines.get(line), score)
+                        && Objects.equals(this.scores.get(line), scoreText)) {
+                    return;
+                }
+
                 this.lines.set(line, score);
                 this.scores.set(line, scoreText);
 
@@ -406,7 +413,7 @@ public abstract class FastBoardBase<T> {
      * @throws IllegalStateException    if this FastBoard has already been deleted
      */
     public void updateLines(T... lines) {
-        updateLines(Arrays.asList(lines));
+        updateLines(Arrays.asList(Objects.requireNonNull(lines, "lines")));
     }
 
     /**
@@ -495,6 +502,10 @@ public abstract class FastBoardBase<T> {
     public synchronized void updateScore(int line, T score) {
         checkState();
         checkLineNumber(line, true, false);
+
+        if (Objects.equals(this.scores.get(line), score)) {
+            return;
+        }
 
         this.scores.set(line, score);
 
