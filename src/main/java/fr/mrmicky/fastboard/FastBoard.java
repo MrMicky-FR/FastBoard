@@ -34,7 +34,6 @@ import java.util.Objects;
 
 /**
  * String-based implementation of {@link FastBoardBase}.
- * On Minecraft 1.12 and earlier, line text is limited to 30 chars for all update methods.
  */
 public class FastBoard extends FastBoardBase<String> {
 
@@ -61,8 +60,6 @@ public class FastBoard extends FastBoardBase<String> {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws NullPointerException if title is null
      */
     @Override
     public void updateTitle(String title) {
@@ -77,20 +74,6 @@ public class FastBoard extends FastBoardBase<String> {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws NullPointerException if lines is null
-     */
-    @Override
-    public void updateLines(String... lines) {
-        Objects.requireNonNull(lines, "lines");
-
-        super.updateLines(lines);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NullPointerException if lines is null
      */
     @Override
     public synchronized void updateLines(Collection<String> lines, Collection<String> scores) {
@@ -98,8 +81,8 @@ public class FastBoard extends FastBoardBase<String> {
 
         if (!VersionType.V1_13.isCurrentAtLeast()) {
             int lineCount = 0;
-            for (String s : lines) {
-                checkLineLength(lineCount++, s);
+            for (String line : lines) {
+                checkLineLength(lineCount++, line);
             }
         }
 
@@ -108,8 +91,6 @@ public class FastBoard extends FastBoardBase<String> {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws IllegalArgumentException if the line is longer than 30 chars on 1.12 or lower
      */
     @Override
     public synchronized void updateLine(int line, String text, String scoreText) {
@@ -118,12 +99,6 @@ public class FastBoard extends FastBoardBase<String> {
         }
 
         super.updateLine(line, text, scoreText);
-    }
-
-    private void checkLineLength(int line, String text) {
-        if (text != null && text.length() > 30) {
-            throw new IllegalArgumentException("Line " + line + " is longer than 30 chars");
-        }
     }
 
     /**
@@ -199,5 +174,11 @@ public class FastBoard extends FastBoardBase<String> {
      */
     protected boolean hasLinesMaxLength() {
         return !VersionType.V1_13.isCurrentAtLeast();
+    }
+
+    private void checkLineLength(int line, String text) {
+        if (text != null && text.length() > 30) {
+            throw new IllegalArgumentException("Line " + line + " is longer than 30 chars");
+        }
     }
 }
