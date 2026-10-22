@@ -201,9 +201,6 @@ public final class ExamplePlugin extends JavaPlugin implements Listener {
 }
 ```
 
-Create a board for each player who is already online when the plugin starts.
-Delete all boards in `onDisable()` to remove them from players when the plugin stops.
-
 ## Adventure support
 
 For servers on modern [PaperMC](https://papermc.io) versions, FastBoard supports
